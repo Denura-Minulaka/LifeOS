@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "830874626356",
+    "project_id": "life-os-df4a2",
+    "storage_bucket": "life-os-df4a2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:830874626356:android:0ada2a8fad942609da1d61",
+        "android_client_info": {
+          "package_name": "com.example.lifeos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDo_11YR6H6VugBZe9Z7tcYzO1sRKZ8lHs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
