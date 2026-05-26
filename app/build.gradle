@@ -31,6 +31,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
+    buildFeatures {
+        viewBinding true
+    }
 }
 
 dependencies {
@@ -41,8 +44,19 @@ dependencies {
     implementation libs.credentials.play.services.auth
     implementation libs.firebase.auth
     implementation libs.firebase.firestore
+    implementation libs.firebase.storage
     implementation libs.googleid
     implementation libs.material
+    implementation libs.lifecycle.viewmodel
+    implementation libs.lifecycle.livedata
+    implementation libs.lifecycle.runtime
+    implementation libs.glide
+    implementation libs.play.services.auth
+    implementation libs.recyclerview
+    implementation libs.cardview
+    implementation libs.fragment
+    implementation libs.swiperefreshlayout
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.16.0'
     testImplementation libs.junit
     androidTestImplementation libs.espresso.core
     androidTestImplementation libs.ext.junit

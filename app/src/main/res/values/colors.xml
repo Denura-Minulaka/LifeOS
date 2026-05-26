@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="background">#0F1115</color>
+    <color name="card_background">#1A1D24</color>
+    <color name="primary_accent">#6C63FF</color>
+    <color name="secondary_accent">#00D1FF</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B3B8</color>
+    <color name="success">#00C853</color>
+    <color name="warning">#FFB300</color>
+    <color name="error">#FF5252</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="chip_background">#2A2D35</color>
+    <color name="divider">#2E3238</color>
 </resources>
