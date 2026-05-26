@@ -81,7 +81,11 @@ public class CreatePostFragment extends Fragment {
                 currentUser = result;
             }
             @Override
-            public void onError(String message) {}
+            public void onError(String message) {
+                if (isAdded()) {
+                    Toast.makeText(requireContext(), "Profile error: " + message, Toast.LENGTH_LONG).show();
+                }
+            }
         });
 
         CategoryChipAdapter chipAdapter = new CategoryChipAdapter();
@@ -106,12 +110,17 @@ public class CreatePostFragment extends Fragment {
         switchFeed.setOnCheckedChangeListener((b, checked) -> updateXp());
 
         btnPublish.setOnClickListener(v -> {
-            if (currentUser == null) return;
-            String title = etTitle.getText() != null ? etTitle.getText().toString().trim() : "";
-            if (title.isEmpty()) {
-                Toast.makeText(requireContext(), "Title is required", Toast.LENGTH_SHORT).show();
+            if (currentUser == null) {
+                Toast.makeText(requireContext(), "Still loading profile, please wait...", Toast.LENGTH_SHORT).show();
                 return;
             }
+            String title = etTitle.getText() != null ? etTitle.getText().toString().trim() : "";
+            if (title.isEmpty()) {
+                etTitle.setError("Title is required");
+                return;
+            }
+            
+            progressBar.setVisibility(View.VISIBLE);
             String desc = etDescription.getText() != null ? etDescription.getText().toString().trim() : "";
             String visibility = switchPublic.isChecked()
                     ? FirestoreConstants.VISIBILITY_PUBLIC : FirestoreConstants.VISIBILITY_PRIVATE;
