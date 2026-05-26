@@ -99,7 +99,11 @@ public class CreatePostFragment extends Fragment {
 
         viewModel.loadCategories();
         viewModel.getCategories().observe(getViewLifecycleOwner(), list -> {
-            chipAdapter.setCategories(list, true);
+            if (list == null || list.isEmpty()) {
+                Toast.makeText(requireContext(), "No categories found in 'category' collection", Toast.LENGTH_SHORT).show();
+            } else {
+                chipAdapter.setCategories(list, true);
+            }
             updateXp();
         });
         viewModel.getXpPreview().observe(getViewLifecycleOwner(), xp ->

@@ -95,14 +95,24 @@ public class ProfileFragment extends Fragment {
 
         CategoryChipAdapter filterAdapter = new CategoryChipAdapter();
         filterAdapter.setListener(position -> {
-            List<Category> cats = filterAdapterCategories;
-            if (cats != null && position < cats.size()) {
-                viewModel.setCategoryFilter(cats.get(position).getName());
+            if (filterAdapterCategories != null && position < filterAdapterCategories.size()) {
+                viewModel.setCategoryFilter(filterAdapterCategories.get(position).getName());
             }
         });
         recyclerFilter.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerFilter.setAdapter(filterAdapter);
+
+        // Add observer for categories
+        new com.example.lifeos.repositories.CategoryRepository().getActiveCategories(new com.example.lifeos.interfaces.FirebaseCallback<List<Category>>() {
+            @Override
+            public void onSuccess(List<Category> result) {
+                filterAdapterCategories = result;
+                filterAdapter.setCategories(result, false);
+            }
+            @Override
+            public void onError(String message) {}
+        });
 
         btnEdit.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), EditProfileActivity.class)));

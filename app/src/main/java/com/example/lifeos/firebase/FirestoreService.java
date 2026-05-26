@@ -219,13 +219,18 @@ public class FirestoreService {
 
     public void getCategories(FirebaseCallback<List<Category>> callback) {
         db.collection(FirestoreConstants.CATEGORY)
-                .whereEqualTo("isActive", true)
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<Category> list = new ArrayList<>();
                     for (QueryDocumentSnapshot doc : snap) {
                         Category c = FirestoreMapper.mapCategory(doc);
-                        if (c != null) list.add(c);
+                        if (c != null) {
+                            // If the document has isActive field, respect it, otherwise assume true for existing categories
+                            Boolean active = doc.getBoolean("isActive");
+                            if (active == null || active) {
+                                list.add(c);
+                            }
+                        }
                     }
                     callback.onSuccess(list);
                 })

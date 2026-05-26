@@ -56,9 +56,12 @@ public class CreatePostViewModel extends ViewModel {
     public void toggleCategory(int position) {
         List<Category> list = categories.getValue();
         if (list == null || position < 0 || position >= list.size()) return;
-        Category c = list.get(position);
+        
+        List<Category> updatedList = new ArrayList<>(list);
+        Category c = updatedList.get(position);
         c.setSelected(!c.isSelected());
-        categories.setValue(list);
+        
+        categories.setValue(updatedList);
     }
 
     public void publishPost(String userId, String username, String userPhoto,

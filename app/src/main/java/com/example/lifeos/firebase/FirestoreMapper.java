@@ -33,7 +33,12 @@ public final class FirestoreMapper {
 
     public static Category mapCategory(DocumentSnapshot doc) {
         Category c = doc.toObject(Category.class);
-        if (c != null) c.setId(doc.getId());
+        if (c != null) {
+            c.setId(doc.getId());
+            if (c.getName() == null || c.getName().isEmpty()) {
+                c.setName(doc.getId());
+            }
+        }
         return c;
     }
 
