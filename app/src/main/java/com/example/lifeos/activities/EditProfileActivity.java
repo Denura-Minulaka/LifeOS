@@ -1,5 +1,6 @@
 package com.example.lifeos.activities;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
@@ -18,6 +19,7 @@ import com.example.lifeos.interfaces.SimpleCallback;
 import com.example.lifeos.models.User;
 import com.example.lifeos.repositories.AuthRepository;
 import com.example.lifeos.repositories.UserRepository;
+import com.example.lifeos.utils.SessionManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -63,10 +65,20 @@ public class EditProfileActivity extends AppCompatActivity {
         TextInputEditText etUsername = findViewById(R.id.etUsername);
         TextInputEditText etBio = findViewById(R.id.etBio);
         MaterialButton btnSave = findViewById(R.id.btnSave);
+        MaterialButton btnLogout = findViewById(R.id.btnLogout);
         ProgressBar progressBar = findViewById(R.id.progressBar);
 
         imgProfile.setOnClickListener(v -> pickProfile.launch("image/*"));
         imgCover.setOnClickListener(v -> pickCover.launch("image/*"));
+
+        btnLogout.setOnClickListener(v -> {
+            new AuthRepository().logout(this);
+            new SessionManager(this).clear();
+            Intent intent = new Intent(this, WelcomeActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+            finish();
+        });
 
         userRepository.getUser(userId, new FirebaseCallback<User>() {
             @Override

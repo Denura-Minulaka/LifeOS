@@ -65,7 +65,6 @@ public class ProfileFragment extends Fragment {
         TextView tvFollowers = view.findViewById(R.id.tvFollowers);
         TextView tvFollowing = view.findViewById(R.id.tvFollowing);
         MaterialButton btnEdit = view.findViewById(R.id.btnEditProfile);
-        MaterialButton btnLogout = view.findViewById(R.id.btnLogout);
         TabLayout tabLayout = view.findViewById(R.id.tabLayout);
         RecyclerView recyclerFilter = view.findViewById(R.id.recyclerCategoryFilter);
         RecyclerView recyclerPinned = view.findViewById(R.id.recyclerPinned);
@@ -79,15 +78,23 @@ public class ProfileFragment extends Fragment {
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerPinned.setAdapter(pinnedAdapter);
 
-        tabLayout.addTab(tabLayout.newTab().setText(R.string.tab_posts));
-        tabLayout.addTab(tabLayout.newTab().setText(R.string.tab_videos));
-        tabLayout.addTab(tabLayout.newTab().setText(R.string.tab_achievements));
+        tabLayout.addTab(tabLayout.newTab().setText("All"));
+        tabLayout.addTab(tabLayout.newTab().setText("Photos"));
+        tabLayout.addTab(tabLayout.newTab().setText("Videos"));
+        tabLayout.addTab(tabLayout.newTab().setText("None"));
+        tabLayout.addTab(tabLayout.newTab().setText("Achievements"));
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                if (tab.getPosition() == 0) viewModel.setTabFilter("posts");
-                else if (tab.getPosition() == 1) viewModel.setTabFilter("videos");
-                else viewModel.setTabFilter("achievements");
+                String filter = "all";
+                switch (tab.getPosition()) {
+                    case 0: filter = "all"; break;
+                    case 1: filter = "photos"; break;
+                    case 2: filter = "videos"; break;
+                    case 3: filter = "none"; break;
+                    case 4: filter = "achievements"; break;
+                }
+                viewModel.setTabFilter(filter);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
@@ -116,12 +123,6 @@ public class ProfileFragment extends Fragment {
 
         btnEdit.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), EditProfileActivity.class)));
-        btnLogout.setOnClickListener(v -> {
-            new AuthRepository().logout(requireContext());
-            new SessionManager(requireContext()).clear();
-            startActivity(new Intent(requireContext(), WelcomeActivity.class));
-            requireActivity().finish();
-        });
 
         viewModel.getUser().observe(getViewLifecycleOwner(), user -> bindUser(user, imgCover, imgProfile,
                 tvName, tvUsername, tvBio, tvXp, tvLevel, tvFollowers, tvFollowing));
