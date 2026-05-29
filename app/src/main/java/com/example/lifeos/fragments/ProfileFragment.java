@@ -117,7 +117,7 @@ public class ProfileFragment extends Fragment {
         btnEdit.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), EditProfileActivity.class)));
         btnLogout.setOnClickListener(v -> {
-            new AuthRepository().logout();
+            new AuthRepository().logout(requireContext());
             new SessionManager(requireContext()).clear();
             startActivity(new Intent(requireContext(), WelcomeActivity.class));
             requireActivity().finish();

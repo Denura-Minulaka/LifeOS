@@ -120,6 +120,13 @@ public class AuthRepository {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    public void logout(android.content.Context context) {
+        authService.signOut();
+        com.google.android.gms.auth.api.signin.GoogleSignInOptions gso = new com.google.android.gms.auth.api.signin.GoogleSignInOptions.Builder(com.google.android.gms.auth.api.signin.GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .build();
+        com.google.android.gms.auth.api.signin.GoogleSignIn.getClient(context, gso).signOut();
+    }
+
     public void logout() {
         authService.signOut();
     }
