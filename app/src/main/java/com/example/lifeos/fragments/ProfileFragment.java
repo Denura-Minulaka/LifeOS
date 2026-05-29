@@ -26,6 +26,7 @@ import com.example.lifeos.adapters.UserPostGridAdapter;
 import com.example.lifeos.models.Category;
 import com.example.lifeos.models.User;
 import com.example.lifeos.repositories.AuthRepository;
+import com.example.lifeos.utils.CategorySelector;
 import com.example.lifeos.utils.SessionManager;
 import com.example.lifeos.viewmodels.ProfileViewModel;
 import com.google.android.material.button.MaterialButton;
@@ -65,6 +66,7 @@ public class ProfileFragment extends Fragment {
         TextView tvFollowers = view.findViewById(R.id.tvFollowers);
         TextView tvFollowing = view.findViewById(R.id.tvFollowing);
         MaterialButton btnEdit = view.findViewById(R.id.btnEditProfile);
+        MaterialButton btnSelectCategories = view.findViewById(R.id.btnSelectCategories);
         TabLayout tabLayout = view.findViewById(R.id.tabLayout);
         TextView tvPinnedLabel = view.findViewById(R.id.tvPinnedLabel);
         RecyclerView recyclerFilter = view.findViewById(R.id.recyclerCategoryFilter);
@@ -124,7 +126,7 @@ public class ProfileFragment extends Fragment {
             @Override
             public void onSuccess(List<Category> result) {
                 filterAdapterCategories = result;
-                filterAdapter.setCategories(result, false);
+                // Initially don't show all, wait for selection
             }
             @Override
             public void onError(String message) {}
@@ -132,6 +134,23 @@ public class ProfileFragment extends Fragment {
 
         btnEdit.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), EditProfileActivity.class)));
+        
+        List<Category> selectedCategoriesForFilter = new ArrayList<>();
+        btnSelectCategories.setOnClickListener(v -> {
+            CategorySelector.show(requireContext(), selectedCategoriesForFilter, selected -> {
+                selectedCategoriesForFilter.clear();
+                selectedCategoriesForFilter.addAll(selected);
+                // Mark all as selected for gradient display
+                for(Category c : selected) c.setSelected(true);
+                filterAdapter.setCategories(selected, true);
+                // Here you would typically trigger a viewmodel filter update based on the list
+                if (!selected.isEmpty()) {
+                    viewModel.setCategoryFilter(selected.get(0).getName()); // Example: filter by first one
+                } else {
+                    viewModel.setCategoryFilter(null);
+                }
+            });
+        });
 
         viewModel.getUser().observe(getViewLifecycleOwner(), user -> bindUser(user, imgCover, imgProfile,
                 tvName, tvUsername, tvBio, tvXp, tvLevel, tvFollowers, tvFollowing));

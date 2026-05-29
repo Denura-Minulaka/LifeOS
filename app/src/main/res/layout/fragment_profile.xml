@@ -109,6 +109,15 @@
                 app:tabMinWidth="120dp"
                 app:tabMode="scrollable" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectCategories"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Select Categories"
+                app:icon="@android:drawable/ic_input_add" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerCategoryFilter"
                 android:layout_width="match_parent"

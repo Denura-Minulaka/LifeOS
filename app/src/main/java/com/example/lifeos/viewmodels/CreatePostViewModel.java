@@ -23,12 +23,20 @@ public class CreatePostViewModel extends ViewModel {
     private final PostRepository postRepository = new PostRepository();
     private final CategoryRepository categoryRepository = new CategoryRepository();
     private final MutableLiveData<List<Category>> categories = new MutableLiveData<>();
+    private final List<Category> selectedCategories = new ArrayList<>();
     private final MutableLiveData<Integer> xpPreview = new MutableLiveData<>(0);
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> success = new MutableLiveData<>();
     private final MutableLiveData<String> error = new MutableLiveData<>();
 
     public LiveData<List<Category>> getCategories() { return categories; }
+    public List<Category> getSelectedCategories() { return selectedCategories; }
+    
+    public void setSelectedCategories(List<Category> list) {
+        selectedCategories.clear();
+        selectedCategories.addAll(list);
+    }
+
     public LiveData<Integer> getXpPreview() { return xpPreview; }
     public LiveData<Boolean> getLoading() { return loading; }
     public LiveData<Boolean> getSuccess() { return success; }
@@ -48,33 +56,17 @@ public class CreatePostViewModel extends ViewModel {
     }
 
     public void updateXpPreview(String mediaType, String visibility, String shouldGoFeed) {
-        List<Category> list = categories.getValue();
-        if (list == null) list = new ArrayList<>();
-        xpPreview.setValue(XpCalculator.calculatePostXp(mediaType, visibility, shouldGoFeed, list));
-    }
-
-    public void toggleCategory(int position) {
-        List<Category> list = categories.getValue();
-        if (list == null || position < 0 || position >= list.size()) return;
-        
-        List<Category> updatedList = new ArrayList<>(list);
-        Category c = updatedList.get(position);
-        c.setSelected(!c.isSelected());
-        
-        categories.setValue(updatedList);
+        xpPreview.setValue(XpCalculator.calculatePostXp(mediaType, visibility, shouldGoFeed, selectedCategories));
     }
 
     public void publishPost(String userId, String username, String userPhoto,
                             String title, String description, String mediaType,
                             String visibility, String shouldGoFeed, Uri mediaUri) {
-        List<Category> selected = categories.getValue();
         List<String> categoryNames = new ArrayList<>();
-        if (selected != null) {
-            for (Category c : selected) {
-                if (c.isSelected()) categoryNames.add(c.getName());
-            }
+        for (Category c : selectedCategories) {
+            categoryNames.add(c.getName());
         }
-        int xp = XpCalculator.calculatePostXp(mediaType, visibility, shouldGoFeed, selected);
+        int xp = XpCalculator.calculatePostXp(mediaType, visibility, shouldGoFeed, selectedCategories);
 
         Post post = new Post();
         post.setUserId(userId);

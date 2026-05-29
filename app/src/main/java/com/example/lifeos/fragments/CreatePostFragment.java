@@ -24,9 +24,11 @@ import com.example.lifeos.R;
 import com.example.lifeos.adapters.CategoryChipAdapter;
 import com.example.lifeos.firebase.FirestoreConstants;
 import com.example.lifeos.interfaces.FirebaseCallback;
+import com.example.lifeos.models.Category;
 import com.example.lifeos.models.User;
 import com.example.lifeos.repositories.AuthRepository;
 import com.example.lifeos.repositories.UserRepository;
+import com.example.lifeos.utils.CategorySelector;
 import com.example.lifeos.viewmodels.CreatePostViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.switchmaterial.SwitchMaterial;
@@ -72,6 +74,7 @@ public class CreatePostFragment extends Fragment {
         SwitchMaterial switchFeed = view.findViewById(R.id.switchFeed);
         TextView tvXp = view.findViewById(R.id.tvXpPreview);
         MaterialButton btnPublish = view.findViewById(R.id.btnPublish);
+        MaterialButton btnSelectCategories = view.findViewById(R.id.btnSelectCategories);
         ProgressBar progressBar = view.findViewById(R.id.progressBar);
         RecyclerView recyclerCategories = view.findViewById(R.id.recyclerCategories);
 
@@ -90,20 +93,23 @@ public class CreatePostFragment extends Fragment {
 
         CategoryChipAdapter chipAdapter = new CategoryChipAdapter();
         chipAdapter.setListener(position -> {
-            viewModel.toggleCategory(position);
-            updateXp();
+            // No action needed on click here if it's just a preview list
         });
         recyclerCategories.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerCategories.setAdapter(chipAdapter);
 
+        btnSelectCategories.setOnClickListener(v -> {
+            CategorySelector.show(requireContext(), viewModel.getSelectedCategories(), selected -> {
+                viewModel.setSelectedCategories(selected);
+                chipAdapter.setCategories(selected, false);
+                updateXp();
+            });
+        });
+
         viewModel.loadCategories();
         viewModel.getCategories().observe(getViewLifecycleOwner(), list -> {
-            if (list == null || list.isEmpty()) {
-                Toast.makeText(requireContext(), "No categories found in 'category' collection", Toast.LENGTH_SHORT).show();
-            } else {
-                chipAdapter.setCategories(list, true);
-            }
+            // Initially, we don't show any selected categories if none are selected
             updateXp();
         });
         viewModel.getXpPreview().observe(getViewLifecycleOwner(), xp ->
