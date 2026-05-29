@@ -66,6 +66,7 @@ public class ProfileFragment extends Fragment {
         TextView tvFollowing = view.findViewById(R.id.tvFollowing);
         MaterialButton btnEdit = view.findViewById(R.id.btnEditProfile);
         TabLayout tabLayout = view.findViewById(R.id.tabLayout);
+        TextView tvPinnedLabel = view.findViewById(R.id.tvPinnedLabel);
         RecyclerView recyclerFilter = view.findViewById(R.id.recyclerCategoryFilter);
         RecyclerView recyclerPinned = view.findViewById(R.id.recyclerPinned);
         RecyclerView recyclerPosts = view.findViewById(R.id.recyclerPosts);
@@ -87,14 +88,22 @@ public class ProfileFragment extends Fragment {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
                 String filter = "all";
+                boolean showExtras = true;
                 switch (tab.getPosition()) {
                     case 0: filter = "all"; break;
                     case 1: filter = "photos"; break;
                     case 2: filter = "videos"; break;
                     case 3: filter = "none"; break;
-                    case 4: filter = "achievements"; break;
+                    case 4: 
+                        filter = "achievements"; 
+                        showExtras = false;
+                        break;
                 }
                 viewModel.setTabFilter(filter);
+                int visibility = showExtras ? View.VISIBLE : View.GONE;
+                recyclerFilter.setVisibility(visibility);
+                tvPinnedLabel.setVisibility(visibility);
+                recyclerPinned.setVisibility(visibility);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
