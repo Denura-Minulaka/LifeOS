@@ -102,7 +102,9 @@ public class CreatePostFragment extends Fragment {
         btnSelectCategories.setOnClickListener(v -> {
             CategorySelector.show(requireContext(), viewModel.getSelectedCategories(), selected -> {
                 viewModel.setSelectedCategories(selected);
-                chipAdapter.setCategories(selected, false);
+                // Mark all as selected for gradient display
+                for (Category c : selected) c.setSelected(true);
+                chipAdapter.setCategories(selected, true);
                 updateXp();
             });
         });

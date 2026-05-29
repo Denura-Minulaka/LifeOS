@@ -116,7 +116,7 @@ public class CategorySelector {
                             .filter(c -> c.getName().toLowerCase().startsWith(query))
                             .collect(Collectors.toList()));
                 }
-                allAdapter.notifyDataSetChanged();
+                allAdapter.setCategories(filteredCategories, true);
             }
         });
 
