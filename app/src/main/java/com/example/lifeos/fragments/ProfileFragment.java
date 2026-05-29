@@ -40,6 +40,7 @@ public class ProfileFragment extends Fragment {
     private ProfileViewModel viewModel;
     private UserPostGridAdapter gridAdapter;
     private UserPostGridAdapter pinnedAdapter;
+    private final List<Category> selectedCategoriesForFilter = new ArrayList<>();
 
     @Nullable
     @Override
@@ -113,20 +114,26 @@ public class ProfileFragment extends Fragment {
 
         CategoryChipAdapter filterAdapter = new CategoryChipAdapter();
         filterAdapter.setListener(position -> {
-            if (filterAdapterCategories != null && position < filterAdapterCategories.size()) {
-                viewModel.setCategoryFilter(filterAdapterCategories.get(position).getName());
+            if (selectedCategoriesForFilter != null && position < selectedCategoriesForFilter.size()) {
+                selectedCategoriesForFilter.remove(position);
+                filterAdapter.setCategories(selectedCategoriesForFilter, true, true);
+                if (!selectedCategoriesForFilter.isEmpty()) {
+                    viewModel.setCategoryFilter(selectedCategoriesForFilter.get(0).getName());
+                } else {
+                    viewModel.setCategoryFilter(null);
+                }
             }
         });
         recyclerFilter.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerFilter.setAdapter(filterAdapter);
 
-        // Add observer for categories
         new com.example.lifeos.repositories.CategoryRepository().getActiveCategories(new com.example.lifeos.interfaces.FirebaseCallback<List<Category>>() {
             @Override
             public void onSuccess(List<Category> result) {
                 filterAdapterCategories = result;
-                // Initially don't show all, wait for selection
+                // Use false for isHorizontalPreview initially if showing all, 
+                // but since we aren't showing all, this is just for reference.
             }
             @Override
             public void onError(String message) {}
@@ -135,14 +142,13 @@ public class ProfileFragment extends Fragment {
         btnEdit.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), EditProfileActivity.class)));
         
-        List<Category> selectedCategoriesForFilter = new ArrayList<>();
         btnSelectCategories.setOnClickListener(v -> {
             CategorySelector.show(requireContext(), selectedCategoriesForFilter, selected -> {
                 selectedCategoriesForFilter.clear();
                 selectedCategoriesForFilter.addAll(selected);
                 // Mark all as selected for gradient display
                 for(Category c : selected) c.setSelected(true);
-                filterAdapter.setCategories(selected, true);
+                filterAdapter.setCategories(selected, true, true);
                 // Here you would typically trigger a viewmodel filter update based on the list
                 if (!selected.isEmpty()) {
                     viewModel.setCategoryFilter(selected.get(0).getName()); // Example: filter by first one

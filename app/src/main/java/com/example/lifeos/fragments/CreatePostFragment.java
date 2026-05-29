@@ -10,6 +10,8 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.List;
+
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
@@ -93,7 +95,12 @@ public class CreatePostFragment extends Fragment {
 
         CategoryChipAdapter chipAdapter = new CategoryChipAdapter();
         chipAdapter.setListener(position -> {
-            // No action needed on click here if it's just a preview list
+            List<Category> selected = viewModel.getSelectedCategories();
+            if (position < selected.size()) {
+                selected.remove(position);
+                chipAdapter.setCategories(selected, true, true);
+                updateXp();
+            }
         });
         recyclerCategories.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
@@ -104,7 +111,7 @@ public class CreatePostFragment extends Fragment {
                 viewModel.setSelectedCategories(selected);
                 // Mark all as selected for gradient display
                 for (Category c : selected) c.setSelected(true);
-                chipAdapter.setCategories(selected, true);
+                chipAdapter.setCategories(selected, true, true);
                 updateXp();
             });
         });

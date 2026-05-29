@@ -23,9 +23,15 @@ public class CategoryChipAdapter extends RecyclerView.Adapter<CategoryChipAdapte
     private final List<Category> categories = new ArrayList<>();
     private ChipListener listener;
     private boolean selectionMode;
+    private boolean isHorizontalPreview;
 
     public void setCategories(List<Category> list, boolean selectionMode) {
+        setCategories(list, selectionMode, false);
+    }
+
+    public void setCategories(List<Category> list, boolean selectionMode, boolean isHorizontalPreview) {
         this.selectionMode = selectionMode;
+        this.isHorizontalPreview = isHorizontalPreview;
         categories.clear();
         if (list != null) categories.addAll(list);
         notifyDataSetChanged();
@@ -38,13 +44,14 @@ public class CategoryChipAdapter extends RecyclerView.Adapter<CategoryChipAdapte
     @NonNull
     @Override
     public ChipViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        int layoutId = isHorizontalPreview ? R.layout.item_category_chip_selected : R.layout.item_category_chip;
         return new ChipViewHolder(LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_category_chip, parent, false));
+                .inflate(layoutId, parent, false));
     }
 
     @Override
     public void onBindViewHolder(@NonNull ChipViewHolder holder, int position) {
-        holder.bind(categories.get(position), selectionMode, listener, position);
+        holder.bind(categories.get(position), selectionMode, isHorizontalPreview, listener, position);
     }
 
     @Override
@@ -54,19 +61,32 @@ public class CategoryChipAdapter extends RecyclerView.Adapter<CategoryChipAdapte
 
     static class ChipViewHolder extends RecyclerView.ViewHolder {
         TextView tvChip;
+        View btnRemove;
 
         ChipViewHolder(@NonNull View itemView) {
             super(itemView);
             tvChip = itemView.findViewById(R.id.tvChip);
+            btnRemove = itemView.findViewById(R.id.btnRemove);
         }
 
-        void bind(Category category, boolean selectionMode, ChipListener listener, int position) {
+        void bind(Category category, boolean selectionMode, boolean isHorizontalPreview, ChipListener listener, int position) {
             tvChip.setText(category.getName());
+            
+            View container = itemView; // In horizontal mode, this is the LinearLayout
+            
             if (selectionMode && category.isSelected()) {
-                tvChip.setBackgroundResource(R.drawable.bg_gradient_button);
+                container.setBackgroundResource(R.drawable.bg_gradient_button);
             } else {
-                tvChip.setBackgroundResource(R.drawable.bg_card_glass);
+                container.setBackgroundResource(R.drawable.bg_card_glass);
             }
+
+            if (btnRemove != null) {
+                btnRemove.setVisibility(isHorizontalPreview ? View.VISIBLE : View.GONE);
+                btnRemove.setOnClickListener(v -> {
+                    if (listener != null) listener.onChipClick(position);
+                });
+            }
+
             itemView.setOnClickListener(v -> {
                 if (listener != null) listener.onChipClick(position);
             });

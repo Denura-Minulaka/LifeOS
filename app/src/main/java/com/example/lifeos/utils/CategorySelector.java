@@ -61,7 +61,7 @@ public class CategorySelector {
         recyclerAll.setAdapter(allAdapter);
 
         Runnable updateUI = () -> {
-            selectedAdapter.setCategories(selectedList, true);
+            selectedAdapter.setCategories(selectedList, true, true);
             tvSelectedTitle.setVisibility(selectedList.isEmpty() ? View.GONE : View.VISIBLE);
             recyclerSelected.setVisibility(selectedList.isEmpty() ? View.GONE : View.VISIBLE);
             
