@@ -167,8 +167,8 @@ public class FirestoreService {
                             .addOnSuccessListener(s -> callback.onSuccess())
                             .addOnFailureListener(e -> callback.onError(e.getMessage())));
         } else {
-            Map<String, Object> like = Map.of("userId", userId, "createdAt", Timestamp.now());
-            likeRef.set(like).addOnSuccessListener(v ->
+            // Save empty document (only document ID matters)
+            likeRef.set(new HashMap<>()).addOnSuccessListener(v ->
                     postRef.update("likesCount", FieldValue.increment(1))
                             .addOnSuccessListener(s -> callback.onSuccess())
                             .addOnFailureListener(e -> callback.onError(e.getMessage())));
@@ -186,8 +186,6 @@ public class FirestoreService {
     public void addComment(String postId, Comment comment, SimpleCallback callback) {
         Map<String, Object> data = new HashMap<>();
         data.put("userId", comment.getUserId());
-        data.put("username", comment.getUsername());
-        data.put("userPhoto", comment.getUserPhoto() != null ? comment.getUserPhoto() : "");
         data.put("text", comment.getText());
         data.put("createdAt", Timestamp.now());
 
@@ -212,7 +210,27 @@ public class FirestoreService {
                         Comment c = FirestoreMapper.mapComment(doc);
                         if (c != null) list.add(c);
                     }
-                    callback.onSuccess(list);
+                    if (list.isEmpty()) {
+                        callback.onSuccess(list);
+                        return;
+                    }
+                    // Fetch usernames for each comment
+                    final int[] pending = {list.size()};
+                    for (Comment comment : list) {
+                        getUser(comment.getUserId(), new FirebaseCallback<User>() {
+                            @Override
+                            public void onSuccess(User user) {
+                                comment.setUsername(user.getUsername());
+                                comment.setUserPhoto(user.getProfilePhoto());
+                                if (--pending[0] == 0) callback.onSuccess(list);
+                            }
+                            @Override
+                            public void onError(String message) {
+                                comment.setUsername("Unknown");
+                                if (--pending[0] == 0) callback.onSuccess(list);
+                            }
+                        });
+                    }
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
