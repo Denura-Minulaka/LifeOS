@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -67,6 +68,24 @@ public class HomeFragment extends Fragment implements PostAdapter.PostListener {
 
         SwipeRefreshLayout swipe = view.findViewById(R.id.swipeRefresh);
         RecyclerView recycler = view.findViewById(R.id.recyclerPosts);
+        ImageView btnCreatePost = view.findViewById(R.id.btnCreatePost);
+
+        new UserRepository().getUser(userId, new FirebaseCallback<User>() {
+            @Override
+            public void onSuccess(User result) {
+                currentUser = result;
+            }
+            @Override
+            public void onError(String message) {}
+        });
+
+        btnCreatePost.setOnClickListener(v -> {
+            getParentFragmentManager().beginTransaction()
+                    .replace(R.id.fragmentContainer, new CreatePostFragment())
+                    .addToBackStack(null)
+                    .commit();
+        });
+
         adapter = new PostAdapter();
         adapter.setListener(this);
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));

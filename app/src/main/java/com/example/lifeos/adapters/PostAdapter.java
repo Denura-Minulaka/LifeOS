@@ -13,8 +13,6 @@ import com.bumptech.glide.Glide;
 import com.example.lifeos.R;
 import com.example.lifeos.models.Post;
 import com.example.lifeos.utils.TimeUtils;
-import com.google.android.material.chip.Chip;
-import com.google.android.material.chip.ChipGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -59,25 +57,24 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
     }
 
     static class PostViewHolder extends RecyclerView.ViewHolder {
-        ImageView imgUser, imgMedia;
-        TextView tvUsername, tvTime, tvTitle, tvDescription, tvLikes, tvComments, tvXp;
-        ChipGroup chipGroup;
-        View btnLike, btnComment;
+        ImageView imgUser, imgMedia, icLike;
+        TextView tvUsername, tvTime, tvTitle, tvDescription, tvLikes, tvComments;
+        View btnLike, btnComment, cardMedia;
 
         PostViewHolder(@NonNull View itemView) {
             super(itemView);
             imgUser = itemView.findViewById(R.id.imgUser);
             imgMedia = itemView.findViewById(R.id.imgMedia);
+            icLike = itemView.findViewById(R.id.icLike);
             tvUsername = itemView.findViewById(R.id.tvUsername);
             tvTime = itemView.findViewById(R.id.tvTime);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvDescription = itemView.findViewById(R.id.tvDescription);
             tvLikes = itemView.findViewById(R.id.tvLikes);
             tvComments = itemView.findViewById(R.id.tvComments);
-            tvXp = itemView.findViewById(R.id.tvXp);
-            chipGroup = itemView.findViewById(R.id.chipGroup);
             btnLike = itemView.findViewById(R.id.btnLike);
             btnComment = itemView.findViewById(R.id.btnComment);
+            cardMedia = itemView.findViewById(R.id.cardMedia);
         }
 
         void bind(Post post, PostListener listener, int position) {
@@ -87,30 +84,25 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             tvDescription.setText(post.getDescription());
             tvLikes.setText(String.valueOf(post.getLikesCount()));
             tvComments.setText(String.valueOf(post.getCommentsCount()));
-            tvXp.setText(itemView.getContext().getString(R.string.xp_earned, (int) post.getXpEarned()));
 
             Glide.with(itemView).load(post.getUserPhoto())
                     .circleCrop().placeholder(R.drawable.ic_logo).into(imgUser);
 
             if (post.getMediaUrl() != null && !post.getMediaUrl().isEmpty()) {
-                imgMedia.setVisibility(View.VISIBLE);
+                cardMedia.setVisibility(View.VISIBLE);
                 Glide.with(itemView).load(post.getMediaUrl()).into(imgMedia);
             } else {
-                imgMedia.setVisibility(View.GONE);
+                cardMedia.setVisibility(View.GONE);
             }
 
-            chipGroup.removeAllViews();
-            if (post.getCategories() != null) {
-                for (String cat : post.getCategories()) {
-                    Chip chip = new Chip(itemView.getContext());
-                    chip.setText(cat);
-                    chip.setChipBackgroundColorResource(R.color.chip_background);
-                    chip.setTextColor(itemView.getContext().getColor(R.color.text_primary));
-                    chipGroup.addView(chip);
-                }
+            if (post.isLikedByCurrentUser()) {
+                icLike.setImageResource(android.R.drawable.btn_star_big_on);
+                icLike.setColorFilter(itemView.getContext().getColor(R.color.primary_accent));
+            } else {
+                icLike.setImageResource(android.R.drawable.btn_star_big_off);
+                icLike.setColorFilter(itemView.getContext().getColor(R.color.text_secondary));
             }
 
-            btnLike.setAlpha(post.isLikedByCurrentUser() ? 1f : 0.5f);
             if (listener != null) {
                 btnLike.setOnClickListener(v -> listener.onLikeClick(post, position));
                 btnComment.setOnClickListener(v -> listener.onCommentClick(post));
