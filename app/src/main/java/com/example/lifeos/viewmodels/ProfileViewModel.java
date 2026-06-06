@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
 import com.example.lifeos.interfaces.FirebaseCallback;
+import com.example.lifeos.interfaces.SimpleCallback;
 import com.example.lifeos.models.Post;
 import com.example.lifeos.models.User;
 import com.example.lifeos.repositories.PostRepository;
@@ -98,5 +99,21 @@ public class ProfileViewModel extends ViewModel {
         if (source == null) return pinned;
         for (Post p : source) if (p.isPinned()) pinned.add(p);
         return pinned;
+    }
+
+    public void toggleLike(Post post, String userId) {
+        boolean liked = post.isLikedByCurrentUser();
+        postRepository.toggleLike(post.getId(), userId, liked, new SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                post.setLikedByCurrentUser(!liked);
+                post.setLikesCount(liked ? post.getLikesCount() - 1 : post.getLikesCount() + 1);
+                filteredPosts.setValue(filteredPosts.getValue());
+            }
+            @Override
+            public void onError(String message) {
+                error.setValue(message);
+            }
+        });
     }
 }

@@ -1,10 +1,12 @@
 package com.example.lifeos.fragments;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -22,24 +24,36 @@ import com.example.lifeos.R;
 import com.example.lifeos.activities.EditProfileActivity;
 import com.example.lifeos.activities.WelcomeActivity;
 import com.example.lifeos.adapters.CategoryChipAdapter;
+import com.example.lifeos.adapters.CommentAdapter;
+import com.example.lifeos.adapters.ProfilePostAdapter;
 import com.example.lifeos.adapters.UserPostGridAdapter;
+import com.example.lifeos.interfaces.FirebaseCallback;
+import com.example.lifeos.interfaces.SimpleCallback;
 import com.example.lifeos.models.Category;
+import com.example.lifeos.models.Comment;
+import com.example.lifeos.models.Post;
 import com.example.lifeos.models.User;
 import com.example.lifeos.repositories.AuthRepository;
+import com.example.lifeos.repositories.PostRepository;
+import com.example.lifeos.repositories.UserRepository;
 import com.example.lifeos.utils.CategorySelector;
 import com.example.lifeos.utils.SessionManager;
 import com.example.lifeos.viewmodels.ProfileViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProfileFragment extends Fragment {
+public class ProfileFragment extends Fragment implements ProfilePostAdapter.ProfilePostListener {
 
     private ProfileViewModel viewModel;
-    private UserPostGridAdapter gridAdapter;
+    private ProfilePostAdapter postAdapter;
     private UserPostGridAdapter pinnedAdapter;
+    private PostRepository postRepository;
+    private String userId;
+    private User currentUser;
     private final List<Category> selectedCategoriesForFilter = new ArrayList<>();
 
     @Nullable
@@ -53,9 +67,19 @@ public class ProfileFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(this).get(ProfileViewModel.class);
+        postRepository = new PostRepository();
         AuthRepository auth = new AuthRepository();
         if (auth.getCurrentUser() == null) return;
-        String userId = auth.getCurrentUser().getUid();
+        userId = auth.getCurrentUser().getUid();
+
+        new UserRepository().getUser(userId, new FirebaseCallback<User>() {
+            @Override
+            public void onSuccess(User result) {
+                currentUser = result;
+            }
+            @Override
+            public void onError(String message) {}
+        });
 
         ImageView imgCover = view.findViewById(R.id.imgCover);
         ImageView imgProfile = view.findViewById(R.id.imgProfile);
@@ -74,10 +98,12 @@ public class ProfileFragment extends Fragment {
         RecyclerView recyclerPinned = view.findViewById(R.id.recyclerPinned);
         RecyclerView recyclerPosts = view.findViewById(R.id.recyclerPosts);
 
-        gridAdapter = new UserPostGridAdapter();
+        postAdapter = new ProfilePostAdapter();
+        postAdapter.setListener(this);
         pinnedAdapter = new UserPostGridAdapter();
-        recyclerPosts.setLayoutManager(new GridLayoutManager(requireContext(), 2));
-        recyclerPosts.setAdapter(gridAdapter);
+        recyclerPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerPosts.setAdapter(postAdapter);
+
         recyclerPinned.setLayoutManager(
                 new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         recyclerPinned.setAdapter(pinnedAdapter);
@@ -160,7 +186,7 @@ public class ProfileFragment extends Fragment {
 
         viewModel.getUser().observe(getViewLifecycleOwner(), user -> bindUser(user, imgCover, imgProfile,
                 tvName, tvUsername, tvBio, tvXp, tvLevel, tvFollowers, tvFollowing));
-        viewModel.getFilteredPosts().observe(getViewLifecycleOwner(), posts -> gridAdapter.setPosts(posts));
+        viewModel.getFilteredPosts().observe(getViewLifecycleOwner(), posts -> postAdapter.setPosts(posts));
         viewModel.getLoading().observe(getViewLifecycleOwner(), loading -> {});
         viewModel.getError().observe(getViewLifecycleOwner(), msg -> {
             if (msg != null) Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
@@ -170,6 +196,67 @@ public class ProfileFragment extends Fragment {
     }
 
     private List<Category> filterAdapterCategories;
+
+    @Override
+    public void onLikeClick(Post post, int position) {
+        viewModel.toggleLike(post, userId);
+    }
+
+    @Override
+    public void onCommentClick(Post post) {
+        showCommentsDialog(post);
+    }
+
+    private void showCommentsDialog(Post post) {
+        Dialog dialog = new Dialog(requireContext());
+        dialog.setContentView(R.layout.dialog_comments);
+        RecyclerView recycler = dialog.findViewById(R.id.recyclerComments);
+        EditText etComment = dialog.findViewById(R.id.etComment);
+        MaterialButton btnPost = dialog.findViewById(R.id.btnPostComment);
+        CommentAdapter commentAdapter = new CommentAdapter();
+        recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recycler.setAdapter(commentAdapter);
+
+        postRepository.getComments(post.getId(), new FirebaseCallback<List<Comment>>() {
+            @Override
+            public void onSuccess(List<Comment> result) {
+                commentAdapter.setComments(result);
+            }
+            @Override
+            public void onError(String message) {}
+        });
+
+        btnPost.setOnClickListener(v -> {
+            String text = etComment.getText().toString().trim();
+            if (text.isEmpty() || currentUser == null) return;
+            Comment comment = new Comment();
+            comment.setUserId(userId);
+            comment.setUsername(currentUser.getUsername());
+            comment.setUserPhoto(currentUser.getProfilePhoto());
+            comment.setText(text);
+            postRepository.addComment(post.getId(), comment, new SimpleCallback() {
+                @Override
+                public void onSuccess() {
+                    etComment.setText("");
+                    postRepository.getComments(post.getId(), new FirebaseCallback<List<Comment>>() {
+                        @Override
+                        public void onSuccess(List<Comment> result) {
+                            commentAdapter.setComments(result);
+                            post.setCommentsCount(post.getCommentsCount() + 1);
+                        }
+                        @Override
+                        public void onError(String message) {}
+                    });
+                }
+                @Override
+                public void onError(String message) {
+                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        dialog.show();
+    }
 
     private void bindUser(User user, ImageView imgCover, ImageView imgProfile, TextView tvName,
                           TextView tvUsername, TextView tvBio, TextView tvXp, TextView tvLevel,
