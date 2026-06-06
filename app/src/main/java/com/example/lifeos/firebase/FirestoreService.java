@@ -175,6 +175,13 @@ public class FirestoreService {
         }
     }
 
+    public void pinPost(String postId, boolean pin, SimpleCallback callback) {
+        db.collection(FirestoreConstants.POSTS).document(postId)
+                .update("pinned", pin)
+                .addOnSuccessListener(v -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
     public void checkLiked(String postId, String userId, FirebaseCallback<Boolean> callback) {
         db.collection(FirestoreConstants.POSTS).document(postId)
                 .collection(FirestoreConstants.LIKES).document(userId)

@@ -53,6 +53,10 @@ public class PostRepository {
         firestoreService.toggleLike(postId, userId, liked, callback);
     }
 
+    public void pinPost(String postId, boolean pin, SimpleCallback callback) {
+        firestoreService.pinPost(postId, pin, callback);
+    }
+
     public void addComment(String postId, Comment comment, SimpleCallback callback) {
         firestoreService.addComment(postId, comment, callback);
     }

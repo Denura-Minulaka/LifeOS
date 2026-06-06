@@ -93,6 +93,20 @@ public class ProfileViewModel extends ViewModel {
         filteredPosts.setValue(result);
     }
 
+    public void pinPost(Post post, boolean pin) {
+        postRepository.pinPost(post.getId(), pin, new SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                post.setPinned(pin);
+                applyFilters();
+            }
+            @Override
+            public void onError(String message) {
+                error.setValue(message);
+            }
+        });
+    }
+
     public List<Post> getPinnedPosts() {
         List<Post> source = allPosts.getValue();
         List<Post> pinned = new ArrayList<>();

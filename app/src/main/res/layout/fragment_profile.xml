@@ -132,18 +132,28 @@
                 android:text="@string/pinned_posts"
                 android:textColor="@color/text_secondary" />
 
+            <TextView
+                android:id="@+id/tvNoPinned"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center"
+                android:text="No Pinned Posts"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
+
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerPinned"
                 android:layout_width="match_parent"
-                android:layout_height="120dp"
+                android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:orientation="horizontal" />
+                android:nestedScrollingEnabled="false" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerPosts"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="0dp"
                 android:nestedScrollingEnabled="false" />
         </LinearLayout>
     </LinearLayout>

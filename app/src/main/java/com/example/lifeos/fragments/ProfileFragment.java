@@ -25,6 +25,7 @@ import com.example.lifeos.activities.EditProfileActivity;
 import com.example.lifeos.activities.WelcomeActivity;
 import com.example.lifeos.adapters.CategoryChipAdapter;
 import com.example.lifeos.adapters.CommentAdapter;
+import com.example.lifeos.adapters.PinnedPostAdapter;
 import com.example.lifeos.adapters.ProfilePostAdapter;
 import com.example.lifeos.adapters.UserPostGridAdapter;
 import com.example.lifeos.interfaces.FirebaseCallback;
@@ -46,11 +47,11 @@ import com.google.android.material.textfield.TextInputEditText;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProfileFragment extends Fragment implements ProfilePostAdapter.ProfilePostListener {
+public class ProfileFragment extends Fragment implements ProfilePostAdapter.ProfilePostListener, PinnedPostAdapter.PinnedPostListener {
 
     private ProfileViewModel viewModel;
     private ProfilePostAdapter postAdapter;
-    private UserPostGridAdapter pinnedAdapter;
+    private PinnedPostAdapter pinnedAdapter;
     private PostRepository postRepository;
     private String userId;
     private User currentUser;
@@ -97,15 +98,16 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
         RecyclerView recyclerFilter = view.findViewById(R.id.recyclerCategoryFilter);
         RecyclerView recyclerPinned = view.findViewById(R.id.recyclerPinned);
         RecyclerView recyclerPosts = view.findViewById(R.id.recyclerPosts);
+        TextView tvNoPinned = view.findViewById(R.id.tvNoPinned);
 
         postAdapter = new ProfilePostAdapter();
         postAdapter.setListener(this);
-        pinnedAdapter = new UserPostGridAdapter();
+        pinnedAdapter = new PinnedPostAdapter();
+        pinnedAdapter.setListener(this);
         recyclerPosts.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerPosts.setAdapter(postAdapter);
 
-        recyclerPinned.setLayoutManager(
-                new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
+        recyclerPinned.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerPinned.setAdapter(pinnedAdapter);
 
         tabLayout.addTab(tabLayout.newTab().setText("All"));
@@ -186,7 +188,13 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
 
         viewModel.getUser().observe(getViewLifecycleOwner(), user -> bindUser(user, imgCover, imgProfile,
                 tvName, tvUsername, tvBio, tvXp, tvLevel, tvFollowers, tvFollowing));
-        viewModel.getFilteredPosts().observe(getViewLifecycleOwner(), posts -> postAdapter.setPosts(posts));
+        viewModel.getFilteredPosts().observe(getViewLifecycleOwner(), posts -> {
+            postAdapter.setPosts(posts);
+            List<Post> pinned = viewModel.getPinnedPosts();
+            pinnedAdapter.setPosts(pinned);
+            tvNoPinned.setVisibility(pinned.isEmpty() ? View.VISIBLE : View.GONE);
+            recyclerPinned.setVisibility(pinned.isEmpty() ? View.GONE : View.VISIBLE);
+        });
         viewModel.getLoading().observe(getViewLifecycleOwner(), loading -> {});
         viewModel.getError().observe(getViewLifecycleOwner(), msg -> {
             if (msg != null) Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
@@ -200,6 +208,32 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
     @Override
     public void onLikeClick(Post post, int position) {
         viewModel.toggleLike(post, userId);
+    }
+
+    @Override
+    public void onPinHold(Post post, View anchor) {
+        Dialog dialog = new Dialog(requireContext());
+        dialog.setContentView(R.layout.dialog_pin_action);
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+        }
+
+        ImageView imgIcon = dialog.findViewById(R.id.imgActionIcon);
+        TextView tvTitle = dialog.findViewById(R.id.tvActionTitle);
+        MaterialButton btnConfirm = dialog.findViewById(R.id.btnConfirm);
+        MaterialButton btnCancel = dialog.findViewById(R.id.btnCancel);
+
+        boolean isPinned = post.isPinned();
+        tvTitle.setText(isPinned ? "Unpin The Post" : "Pin The Post");
+        imgIcon.setImageResource(isPinned ? android.R.drawable.ic_menu_delete : android.R.drawable.ic_menu_save);
+
+        btnConfirm.setOnClickListener(v -> {
+            viewModel.pinPost(post, !isPinned);
+            dialog.dismiss();
+        });
+
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+        dialog.show();
     }
 
     @Override
