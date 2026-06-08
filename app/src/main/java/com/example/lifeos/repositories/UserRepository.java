@@ -32,7 +32,19 @@ public class UserRepository {
         updates.put("name", name);
         updates.put("username", username);
         updates.put("bio", bio);
-        firestoreService.updateUser(userId, updates, callback);
+        firestoreService.updateUser(userId, updates, new SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                Map<String, Object> postUpdates = new HashMap<>();
+                postUpdates.put("username", username);
+                firestoreService.updatePostUserInfo(userId, postUpdates, callback);
+            }
+
+            @Override
+            public void onError(String message) {
+                callback.onError(message);
+            }
+        });
     }
 
     public void uploadProfilePhoto(String userId, Uri uri, FirebaseCallback<String> callback) {
@@ -40,11 +52,25 @@ public class UserRepository {
         storageService.upload(storageService.profilePhotoRef(userId, fileName), uri)
                 .addOnSuccessListener(url -> {
                     Map<String, Object> updates = new HashMap<>();
-                    updates.put("profilePhoto", url.toString());
+                    String photoUrl = url.toString();
+                    updates.put("profilePhoto", photoUrl);
                     firestoreService.updateUser(userId, updates, new SimpleCallback() {
                         @Override
                         public void onSuccess() {
-                            callback.onSuccess(url.toString());
+                            Map<String, Object> postUpdates = new HashMap<>();
+                            postUpdates.put("userPhoto", photoUrl);
+                            firestoreService.updatePostUserInfo(userId, postUpdates, new SimpleCallback() {
+                                @Override
+                                public void onSuccess() {
+                                    callback.onSuccess(photoUrl);
+                                }
+
+                                @Override
+                                public void onError(String message) {
+                                    // Even if posts fail to update, the profile photo was updated
+                                    callback.onSuccess(photoUrl);
+                                }
+                            });
                         }
                         @Override
                         public void onError(String message) {

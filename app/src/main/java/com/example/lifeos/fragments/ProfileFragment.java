@@ -118,6 +118,7 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+                if (postAdapter != null) postAdapter.clearExpandedState();
                 String filter = "all";
                 boolean showExtras = true;
                 switch (tab.getPosition()) {
@@ -143,6 +144,7 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
         CategoryChipAdapter filterAdapter = new CategoryChipAdapter();
         filterAdapter.setListener(position -> {
             if (selectedCategoriesForFilter != null && position < selectedCategoriesForFilter.size()) {
+                if (postAdapter != null) postAdapter.clearExpandedState();
                 selectedCategoriesForFilter.remove(position);
                 filterAdapter.setCategories(selectedCategoriesForFilter, true, true);
                 if (!selectedCategoriesForFilter.isEmpty()) {
@@ -172,6 +174,7 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
         
         btnSelectCategories.setOnClickListener(v -> {
             CategorySelector.show(requireContext(), selectedCategoriesForFilter, selected -> {
+                if (postAdapter != null) postAdapter.clearExpandedState();
                 selectedCategoriesForFilter.clear();
                 selectedCategoriesForFilter.addAll(selected);
                 // Mark all as selected for gradient display

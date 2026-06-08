@@ -45,9 +45,12 @@ public class ProfilePostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         this.listener = listener;
     }
 
+    public void clearExpandedState() {
+        visibleCounts.clear();
+    }
+
     public void setPosts(List<Post> list) {
         groupedPosts.clear();
-        visibleCounts.clear();
         
         if (list != null) {
             for (Post post : list) {
@@ -55,7 +58,9 @@ public class ProfilePostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 String dateStr = formatDate(post.getCreatedAt().toDate());
                 if (!groupedPosts.containsKey(dateStr)) {
                     groupedPosts.put(dateStr, new ArrayList<>());
-                    visibleCounts.put(dateStr, 2); // Initial visible count per day
+                    if (!visibleCounts.containsKey(dateStr)) {
+                        visibleCounts.put(dateStr, 2); // Initial visible count per day
+                    }
                 }
                 List<Post> dayPosts = groupedPosts.get(dateStr);
                 if (dayPosts != null) dayPosts.add(post);
@@ -78,16 +83,16 @@ public class ProfilePostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             String dateStr = entry.getKey();
             List<Post> postsForDate = entry.getValue();
             Integer visible = visibleCounts.get(dateStr);
-            if (visible == null) visible = 2;
+            int visibleCount = (visible != null) ? visible : 2;
             
             items.add(dateStr); // Add Header
             
-            int countToShow = Math.min(visible, postsForDate.size());
+            int countToShow = Math.min(visibleCount, postsForDate.size());
             for (int i = 0; i < countToShow; i++) {
                 items.add(postsForDate.get(i));
             }
             
-            if (postsForDate.size() > visible) {
+            if (postsForDate.size() > visibleCount) {
                 items.add(new LoadMoreItem(dateStr));
             }
         }

@@ -182,6 +182,26 @@ public class FirestoreService {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    public void updatePostUserInfo(String userId, Map<String, Object> updates, SimpleCallback callback) {
+        db.collection(FirestoreConstants.POSTS)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap.isEmpty()) {
+                        callback.onSuccess();
+                        return;
+                    }
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    for (com.google.firebase.firestore.QueryDocumentSnapshot doc : snap) {
+                        batch.update(doc.getReference(), updates);
+                    }
+                    batch.commit()
+                            .addOnSuccessListener(v -> callback.onSuccess())
+                            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
     public void checkLiked(String postId, String userId, FirebaseCallback<Boolean> callback) {
         db.collection(FirestoreConstants.POSTS).document(postId)
                 .collection(FirestoreConstants.LIKES).document(userId)
