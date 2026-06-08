@@ -21,60 +21,63 @@ public class ExploreViewModel extends ViewModel {
     
     private String currentQuery = "";
     private final List<String> selectedCategories = new ArrayList<>();
+    private String tabFilter = "all";
 
     public LiveData<List<Post>> getPosts() { return posts; }
     public LiveData<Boolean> getLoading() { return loading; }
     public LiveData<String> getError() { return error; }
 
+    public void setTabFilter(String filter, String userId) {
+        this.tabFilter = filter;
+        loadExplorePosts(userId);
+    }
+
     public void loadExplorePosts(String currentUserId) {
         loading.setValue(true);
-        if (currentQuery.isEmpty() && selectedCategories.isEmpty()) {
-            postRepository.getFeed(currentUserId, new FirebaseCallback<List<Post>>() {
-                @Override
-                public void onSuccess(List<Post> result) {
-                    posts.setValue(result);
-                    loading.setValue(false);
-                }
-                @Override
-                public void onError(String message) {
-                    error.setValue(message);
-                    loading.setValue(false);
-                }
-            });
-        } else {
-            postRepository.searchPosts(currentQuery, new FirebaseCallback<List<Post>>() {
-                @Override
-                public void onSuccess(List<Post> result) {
-                    List<Post> filtered = new ArrayList<>();
-                    for (Post p : result) {
-                        boolean matchesQuery = currentQuery.isEmpty() || 
-                                (p.getTitle() != null && p.getTitle().toLowerCase().contains(currentQuery.toLowerCase())) ||
-                                (p.getDescription() != null && p.getDescription().toLowerCase().contains(currentQuery.toLowerCase()));
-                        
-                        boolean matchesCategories = selectedCategories.isEmpty();
-                        if (!selectedCategories.isEmpty() && p.getCategories() != null) {
-                            for (String cat : selectedCategories) {
-                                if (p.getCategories().contains(cat)) {
-                                    matchesCategories = true;
-                                    break;
-                                }
+        postRepository.searchPosts(currentQuery, new FirebaseCallback<List<Post>>() {
+            @Override
+            public void onSuccess(List<Post> result) {
+                List<Post> filtered = new ArrayList<>();
+                for (Post p : result) {
+                    // Search query filter
+                    boolean matchesQuery = currentQuery.isEmpty() || 
+                            (p.getTitle() != null && p.getTitle().toLowerCase().contains(currentQuery.toLowerCase())) ||
+                            (p.getDescription() != null && p.getDescription().toLowerCase().contains(currentQuery.toLowerCase()));
+                    
+                    // Category filter
+                    boolean matchesCategories = selectedCategories.isEmpty();
+                    if (!selectedCategories.isEmpty() && p.getCategories() != null) {
+                        for (String cat : selectedCategories) {
+                            if (p.getCategories().contains(cat)) {
+                                matchesCategories = true;
+                                break;
                             }
                         }
-                        
-                        if (matchesQuery && matchesCategories) {
-                            filtered.add(p);
-                        }
                     }
-                    posts.setValue(filtered);
-                    loading.setValue(false);
+
+                    // Tab filter (Media type)
+                    boolean matchesTab = true;
+                    if ("photos".equals(tabFilter)) {
+                        matchesTab = "image".equals(p.getMediaType());
+                    } else if ("videos".equals(tabFilter)) {
+                        matchesTab = "video".equals(p.getMediaType());
+                    } else if ("none".equals(tabFilter)) {
+                        matchesTab = p.getMediaType() == null || "none".equals(p.getMediaType()) || p.getMediaType().isEmpty();
+                    }
+                    
+                    if (matchesQuery && matchesCategories && matchesTab) {
+                        filtered.add(p);
+                    }
                 }
-                @Override
-                public void onError(String message) {
-                    error.setValue(message);
-                    loading.setValue(false);
-                }
-            });
-        }
+                posts.setValue(filtered);
+                loading.setValue(false);
+            }
+            @Override
+            public void onError(String message) {
+                error.setValue(message);
+                loading.setValue(false);
+            }
+        });
     }
 
     public void setSearchQuery(String query, String userId) {

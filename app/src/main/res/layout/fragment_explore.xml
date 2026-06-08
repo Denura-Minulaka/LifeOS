@@ -65,11 +65,23 @@
         android:textSize="22sp"
         android:textStyle="bold" />
 
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:background="@color/background"
+        app:tabMinWidth="100dp"
+        app:tabMode="scrollable"
+        app:tabSelectedTextColor="@color/primary_accent"
+        app:tabTextColor="@color/text_secondary"
+        app:tabIndicatorColor="@color/primary_accent" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerResults"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="20dp"
         android:layout_weight="1"
         android:clipToPadding="false"
         android:paddingBottom="80dp"/>

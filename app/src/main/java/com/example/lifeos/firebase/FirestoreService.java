@@ -73,28 +73,51 @@ public class FirestoreService {
     public void getFeedPosts(String currentUserId, FirebaseCallback<List<Post>> callback) {
         db.collection(FirestoreConstants.POSTS)
                 .whereEqualTo("visibility", FirestoreConstants.VISIBILITY_PUBLIC)
-                .whereEqualTo("shouldGoFeed", FirestoreConstants.FEED_YES)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .limit(50)
+                .limit(100)
                 .get()
-                .addOnSuccessListener(snap -> mapPostsWithLikes(snap, currentUserId, callback))
+                .addOnSuccessListener(snap -> {
+                    List<Post> posts = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        Post p = FirestoreMapper.mapPost(doc);
+                        // Filter locally for "shouldGoFeed" to avoid complex index
+                        if (p != null && FirestoreConstants.FEED_YES.equals(p.getShouldGoFeed())) {
+                            posts.add(p);
+                        }
+                    }
+                    // Sort locally to avoid index
+                    posts.sort((p1, p2) -> {
+                        if (p1.getCreatedAt() == null || p2.getCreatedAt() == null) return 0;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                    });
+                    mapPostsWithLikes(posts, currentUserId, callback);
+                })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     public void getUserPosts(String userId, String currentUserId, FirebaseCallback<List<Post>> callback) {
         db.collection(FirestoreConstants.POSTS)
                 .whereEqualTo("userId", userId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
-                .addOnSuccessListener(snap -> mapPostsWithLikes(snap, currentUserId, callback))
+                .addOnSuccessListener(snap -> {
+                    List<Post> posts = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        Post p = FirestoreMapper.mapPost(doc);
+                        if (p != null) posts.add(p);
+                    }
+                    // Sort locally to avoid index
+                    posts.sort((p1, p2) -> {
+                        if (p1.getCreatedAt() == null || p2.getCreatedAt() == null) return 0;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                    });
+                    mapPostsWithLikes(posts, currentUserId, callback);
+                })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
     public void searchPosts(String query, FirebaseCallback<List<Post>> callback) {
         db.collection(FirestoreConstants.POSTS)
                 .whereEqualTo("visibility", FirestoreConstants.VISIBILITY_PUBLIC)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
-                .limit(30)
+                .limit(100)
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<Post> posts = new ArrayList<>();
@@ -106,6 +129,11 @@ public class FirestoreService {
                             posts.add(p);
                         }
                     }
+                    // Sort locally to avoid index
+                    posts.sort((p1, p2) -> {
+                        if (p1.getCreatedAt() == null || p2.getCreatedAt() == null) return 0;
+                        return p2.getCreatedAt().compareTo(p1.getCreatedAt());
+                    });
                     callback.onSuccess(posts);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
@@ -354,13 +382,8 @@ public class FirestoreService {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    private void mapPostsWithLikes(com.google.firebase.firestore.QuerySnapshot snap,
+    private void mapPostsWithLikes(List<Post> posts,
                                    String currentUserId, FirebaseCallback<List<Post>> callback) {
-        List<Post> posts = new ArrayList<>();
-        for (QueryDocumentSnapshot doc : snap) {
-            Post p = FirestoreMapper.mapPost(doc);
-            if (p != null) posts.add(p);
-        }
         if (posts.isEmpty() || currentUserId == null) {
             callback.onSuccess(posts);
             return;

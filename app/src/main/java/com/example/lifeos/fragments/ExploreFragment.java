@@ -35,6 +35,7 @@ import com.example.lifeos.repositories.UserRepository;
 import com.example.lifeos.utils.CategorySelector;
 import com.example.lifeos.viewmodels.ExploreViewModel;
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
@@ -81,6 +82,29 @@ public class ExploreFragment extends Fragment implements PostAdapter.PostListene
         ImageButton btnFilter = view.findViewById(R.id.btnFilter);
         RecyclerView recyclerSelectedCategories = view.findViewById(R.id.recyclerSelectedCategories);
         RecyclerView recyclerResults = view.findViewById(R.id.recyclerResults);
+        TabLayout tabLayout = view.findViewById(R.id.tabLayout);
+
+        // Setup TabLayout
+        tabLayout.addTab(tabLayout.newTab().setText("All"));
+        tabLayout.addTab(tabLayout.newTab().setText("Photos"));
+        tabLayout.addTab(tabLayout.newTab().setText("Videos"));
+        tabLayout.addTab(tabLayout.newTab().setText("None"));
+
+        tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                String filter = "all";
+                switch (tab.getPosition()) {
+                    case 0: filter = "all"; break;
+                    case 1: filter = "photos"; break;
+                    case 2: filter = "videos"; break;
+                    case 3: filter = "none"; break;
+                }
+                viewModel.setTabFilter(filter, userId);
+            }
+            @Override public void onTabUnselected(TabLayout.Tab tab) {}
+            @Override public void onTabReselected(TabLayout.Tab tab) {}
+        });
 
         // Setup Selected Categories Chips
         selectedCategoriesAdapter = new CategoryChipAdapter();
