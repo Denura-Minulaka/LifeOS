@@ -71,10 +71,14 @@
     <string name="filter_talents">Talents</string>
     <string name="recent">Recent</string>
     <string name="see_all">See all</string>
+    <string name="clear_all">Clear all</string>
+    <string name="clear_history_title">Clear Search History?</string>
+    <string name="clear_history_msg">This will permanently delete all your recent searches.</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
 
     <!-- General -->
     <string name="loading">Loading…</string>
     <string name="error_generic">Something went wrong. Please try again.</string>
     <string name="save">Save</string>
-    <string name="cancel">Cancel</string>
 </resources>

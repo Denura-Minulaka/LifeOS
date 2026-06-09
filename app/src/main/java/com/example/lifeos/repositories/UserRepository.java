@@ -105,4 +105,26 @@ public class UserRepository {
     public void searchUsers(String query, FirebaseCallback<List<User>> callback) {
         firestoreService.searchUsers(query, callback);
     }
+
+    public void addRecentSearch(String userId, String query) {
+        firestoreService.addRecentSearch(userId, query, new SimpleCallback() {
+            @Override public void onSuccess() {}
+            @Override public void onError(String message) {}
+        });
+    }
+
+    public void getRecentSearches(String userId, FirebaseCallback<List<String>> callback) {
+        firestoreService.getRecentSearches(userId, callback);
+    }
+
+    public void deleteRecentSearch(String userId, String query) {
+        firestoreService.deleteRecentSearch(userId, query, new SimpleCallback() {
+            @Override public void onSuccess() {}
+            @Override public void onError(String message) {}
+        });
+    }
+
+    public void clearRecentSearches(String userId, SimpleCallback callback) {
+        firestoreService.clearRecentSearches(userId, callback);
+    }
 }

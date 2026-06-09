@@ -325,6 +325,62 @@ public class FirestoreService {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    public void addRecentSearch(String userId, String query, SimpleCallback callback) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("query", query);
+        data.put("timestamp", Timestamp.now());
+
+        db.collection(FirestoreConstants.USERS).document(userId)
+                .collection(FirestoreConstants.RECENT_SEARCHES).document(query)
+                .set(data)
+                .addOnSuccessListener(v -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void getRecentSearches(String userId, FirebaseCallback<List<String>> callback) {
+        db.collection(FirestoreConstants.USERS).document(userId)
+                .collection(FirestoreConstants.RECENT_SEARCHES)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(10)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<String> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        list.add(doc.getString("query"));
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void deleteRecentSearch(String userId, String query, SimpleCallback callback) {
+        db.collection(FirestoreConstants.USERS).document(userId)
+                .collection(FirestoreConstants.RECENT_SEARCHES).document(query)
+                .delete()
+                .addOnSuccessListener(v -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void clearRecentSearches(String userId, SimpleCallback callback) {
+        db.collection(FirestoreConstants.USERS).document(userId)
+                .collection(FirestoreConstants.RECENT_SEARCHES)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap.isEmpty()) {
+                        callback.onSuccess();
+                        return;
+                    }
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    for (DocumentSnapshot doc : snap) {
+                        batch.delete(doc.getReference());
+                    }
+                    batch.commit()
+                            .addOnSuccessListener(v -> callback.onSuccess())
+                            .addOnFailureListener(e -> callback.onError(e.getMessage()));
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
     public void isQuestCompletedToday(String userId, String questId, FirebaseCallback<Boolean> callback) {
         Calendar cal = Calendar.getInstance();
         cal.set(Calendar.HOUR_OF_DAY, 0);

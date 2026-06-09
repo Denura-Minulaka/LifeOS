@@ -29,6 +29,7 @@ import com.example.lifeos.repositories.AuthRepository;
 import com.example.lifeos.repositories.PostRepository;
 import com.example.lifeos.repositories.UserRepository;
 import com.example.lifeos.viewmodels.ExploreViewModel;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -44,6 +45,7 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
     private String userId;
     private User currentUser;
     private PostRepository postRepository;
+    private UserRepository userRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,11 +54,12 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
 
         viewModel = new ViewModelProvider(this).get(ExploreViewModel.class);
         postRepository = new PostRepository();
+        userRepository = new UserRepository();
         
         AuthRepository auth = new AuthRepository();
         if (auth.getCurrentUser() != null) {
             userId = auth.getCurrentUser().getUid();
-            new UserRepository().getUser(userId, new FirebaseCallback<User>() {
+            userRepository.getUser(userId, new FirebaseCallback<User>() {
                 @Override
                 public void onSuccess(User result) {
                     currentUser = result;
@@ -64,13 +67,14 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
                 @Override
                 public void onError(String message) {}
             });
+            loadRecentSearches();
         }
 
         ImageButton btnBack = findViewById(R.id.btnBack);
         TextInputEditText etSearch = findViewById(R.id.etSearch);
         RecyclerView recyclerResults = findViewById(R.id.recyclerResults);
         RecyclerView recyclerRecent = findViewById(R.id.recyclerRecentSearches);
-        TextView tvSeeAll = findViewById(R.id.tvSeeAll);
+        TextView tvClearAll = findViewById(R.id.tvClearAll);
 
         btnBack.setOnClickListener(v -> finish());
 
@@ -84,6 +88,8 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
 
             @Override
             public void onDeleteClick(int position) {
+                String query = recentSearches.get(position);
+                userRepository.deleteRecentSearch(userId, query);
                 recentSearches.remove(position);
                 recentSearchAdapter.setItems(recentSearches);
                 if (recentSearches.isEmpty()) {
@@ -97,8 +103,8 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
         // No dummy data anymore
         recentSearchAdapter.setItems(recentSearches);
 
-        tvSeeAll.setOnClickListener(v -> {
-            Toast.makeText(this, "See all clicked", Toast.LENGTH_SHORT).show();
+        tvClearAll.setOnClickListener(v -> {
+            showClearHistoryDialog();
         });
 
         postAdapter = new PostAdapter();
@@ -146,6 +152,12 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        loadRecentSearches();
+    }
+
+    @Override
     public void onLikeClick(Post post, int position) {
         viewModel.toggleLike(post, userId);
     }
@@ -155,16 +167,68 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
         showCommentsDialog(post);
     }
 
+    private void showClearHistoryDialog() {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(getString(R.string.clear_history_title))
+                .setMessage(getString(R.string.clear_history_msg))
+                .setNegativeButton(getString(R.string.cancel), (dialog, which) -> dialog.dismiss())
+                .setPositiveButton(getString(R.string.confirm), (dialog, which) -> {
+                    if (userId != null) {
+                        userRepository.clearRecentSearches(userId, new SimpleCallback() {
+                            @Override
+                            public void onSuccess() {
+                                recentSearches.clear();
+                                recentSearchAdapter.setItems(recentSearches);
+                                findViewById(R.id.layoutRecentSearches).setVisibility(View.GONE);
+                            }
+
+                            @Override
+                            public void onError(String message) {
+                                Toast.makeText(SearchActivity.this, message, Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                    }
+                })
+                .show();
+    }
+
     private void performSearch(String query) {
-        // Add to recent searches if not already there
-        if (!recentSearches.contains(query)) {
-            recentSearches.add(0, query);
-            recentSearchAdapter.setItems(recentSearches);
+        // Save to Firebase
+        if (userId != null) {
+            userRepository.addRecentSearch(userId, query);
         }
+
+        // Update local list for immediate UI feedback if we return
+        if (recentSearches.contains(query)) {
+            recentSearches.remove(query);
+        }
+        recentSearches.add(0, query);
+        recentSearchAdapter.setItems(recentSearches);
         
         Intent intent = new Intent(this, SearchResultsActivity.class);
         intent.putExtra("QUERY", query);
         startActivity(intent);
+    }
+
+    private void loadRecentSearches() {
+        if (userId == null) return;
+        userRepository.getRecentSearches(userId, new FirebaseCallback<List<String>>() {
+            @Override
+            public void onSuccess(List<String> result) {
+                recentSearches.clear();
+                recentSearches.addAll(result);
+                recentSearchAdapter.setItems(recentSearches);
+                
+                // Show if search bar is empty
+                EditText etSearch = findViewById(R.id.etSearch);
+                if (etSearch.getText().toString().trim().isEmpty() && !recentSearches.isEmpty()) {
+                    findViewById(R.id.layoutRecentSearches).setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onError(String message) {}
+        });
     }
 
     private void showCommentsDialog(Post post) {
