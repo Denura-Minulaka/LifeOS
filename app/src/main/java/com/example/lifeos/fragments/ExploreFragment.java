@@ -1,5 +1,6 @@
 package com.example.lifeos.fragments;
 
+import android.content.Intent;
 import android.app.Dialog;
 import android.os.Bundle;
 import android.text.Editable;
@@ -20,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.lifeos.R;
+import com.example.lifeos.activities.SearchActivity;
 import com.example.lifeos.adapters.CategoryChipAdapter;
 import com.example.lifeos.adapters.CommentAdapter;
 import com.example.lifeos.adapters.PostAdapter;
@@ -123,15 +125,10 @@ public class ExploreFragment extends Fragment implements PostAdapter.PostListene
         recyclerResults.setAdapter(postAdapter);
 
         // Search logic
-        etSearch.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {}
-            @Override
-            public void afterTextChanged(Editable s) {
-                viewModel.setSearchQuery(s.toString().trim(), userId);
-            }
+        etSearch.setFocusable(false);
+        etSearch.setOnClickListener(v -> {
+            Intent intent = new Intent(requireContext(), SearchActivity.class);
+            startActivity(intent);
         });
 
         // Filter logic
