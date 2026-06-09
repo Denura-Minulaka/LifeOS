@@ -1,6 +1,7 @@
 package com.example.lifeos.activities;
 
 import android.app.Dialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -78,8 +79,7 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
         recentSearchAdapter.setListener(new RecentSearchAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(String query) {
-                etSearch.setText(query);
-                etSearch.setSelection(query.length());
+                performSearch(query);
             }
 
             @Override
@@ -94,10 +94,7 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
         recyclerRecent.setLayoutManager(new LinearLayoutManager(this));
         recyclerRecent.setAdapter(recentSearchAdapter);
 
-        // Dummy data for recent searches
-        recentSearches.add("Fitness tips");
-        recentSearches.add("Healthy recipes");
-        recentSearches.add("Meditation");
+        // No dummy data anymore
         recentSearchAdapter.setItems(recentSearches);
 
         tvSeeAll.setOnClickListener(v -> {
@@ -109,6 +106,17 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
         recyclerResults.setLayoutManager(new LinearLayoutManager(this));
         recyclerResults.setAdapter(postAdapter);
 
+        etSearch.setOnEditorActionListener((v1, actionId, event) -> {
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH) {
+                String query = etSearch.getText().toString().trim();
+                if (!query.isEmpty()) {
+                    performSearch(query);
+                }
+                return true;
+            }
+            return false;
+        });
+
         etSearch.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -117,7 +125,7 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
             @Override
             public void afterTextChanged(Editable s) {
                 String query = s.toString().trim();
-                viewModel.setSearchQuery(query, userId);
+                // We don't search as user types anymore per request
                 
                 // Show/Hide recent searches based on query
                 if (query.isEmpty() && !recentSearches.isEmpty()) {
@@ -145,6 +153,18 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
     @Override
     public void onCommentClick(Post post) {
         showCommentsDialog(post);
+    }
+
+    private void performSearch(String query) {
+        // Add to recent searches if not already there
+        if (!recentSearches.contains(query)) {
+            recentSearches.add(0, query);
+            recentSearchAdapter.setItems(recentSearches);
+        }
+        
+        Intent intent = new Intent(this, SearchResultsActivity.class);
+        intent.putExtra("QUERY", query);
+        startActivity(intent);
     }
 
     private void showCommentsDialog(Post post) {

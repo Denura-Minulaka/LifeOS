@@ -9,6 +9,7 @@ import com.example.lifeos.interfaces.SimpleCallback;
 import com.example.lifeos.models.User;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -99,5 +100,9 @@ public class UserRepository {
                     });
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void searchUsers(String query, FirebaseCallback<List<User>> callback) {
+        firestoreService.searchUsers(query, callback);
     }
 }
