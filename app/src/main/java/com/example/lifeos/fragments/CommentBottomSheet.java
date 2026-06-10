@@ -26,6 +26,8 @@ import com.example.lifeos.models.User;
 import com.example.lifeos.repositories.AuthRepository;
 import com.example.lifeos.repositories.PostRepository;
 import com.example.lifeos.repositories.UserRepository;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.util.List;
@@ -41,10 +43,6 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
 
     public static CommentBottomSheet newInstance(Post post) {
         CommentBottomSheet fragment = new CommentBottomSheet();
-        Bundle args = new Bundle();
-        // Post is not Serializable/Parcelable in the current project yet, but we can pass ID if needed.
-        // For now, let's assume we pass the whole object or ID. 
-        // I'll check if Post implements Serializable.
         fragment.setPost(post);
         return fragment;
     }
@@ -62,6 +60,18 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        
+        // Force expanded state
+        if (getDialog() instanceof BottomSheetDialog) {
+            BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
+            View bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                BottomSheetBehavior<View> behavior = BottomSheetBehavior.from(bottomSheet);
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+                behavior.setSkipCollapsed(true);
+            }
+        }
+
         postRepository = new PostRepository();
         AuthRepository auth = new AuthRepository();
         
@@ -91,7 +101,7 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
         recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
         recycler.setAdapter(adapter);
 
-        loadComments();
+        loadComments(false);
 
         btnPost.setOnClickListener(v -> {
             String text = etComment.getText().toString().trim();
@@ -109,7 +119,7 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
                     etComment.setText("");
                     post.setCommentsCount(post.getCommentsCount() + 1);
                     tvCount.setText(getString(R.string.comments) + " (" + post.getCommentsCount() + ")");
-                    loadComments();
+                    loadComments(true);
                 }
 
                 @Override
@@ -120,11 +130,17 @@ public class CommentBottomSheet extends BottomSheetDialogFragment {
         });
     }
 
-    private void loadComments() {
+    private void loadComments(boolean scrollToBottom) {
         postRepository.getComments(post.getId(), new FirebaseCallback<List<Comment>>() {
             @Override
             public void onSuccess(List<Comment> result) {
                 adapter.setComments(result);
+                if (scrollToBottom && !result.isEmpty() && getView() != null) {
+                    RecyclerView recycler = getView().findViewById(R.id.recyclerComments);
+                    if (recycler != null) {
+                        recycler.post(() -> recycler.smoothScrollToPosition(result.size() - 1));
+                    }
+                }
             }
 
             @Override
