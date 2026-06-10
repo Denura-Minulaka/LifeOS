@@ -1,9 +1,11 @@
 package com.example.lifeos.activities;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -13,20 +15,25 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.lifeos.R;
+import com.example.lifeos.adapters.CommentAdapter;
 import com.example.lifeos.adapters.PostAdapter;
 import com.example.lifeos.adapters.UserAdapter;
 import com.example.lifeos.interfaces.FirebaseCallback;
+import com.example.lifeos.interfaces.SimpleCallback;
+import com.example.lifeos.models.Comment;
 import com.example.lifeos.models.Post;
 import com.example.lifeos.models.User;
+import com.example.lifeos.repositories.AuthRepository;
 import com.example.lifeos.repositories.PostRepository;
 import com.example.lifeos.repositories.UserRepository;
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class SearchResultsActivity extends AppCompatActivity {
+public class SearchResultsActivity extends AppCompatActivity implements PostAdapter.PostListener {
 
     private String query;
     private UserRepository userRepository;
@@ -37,6 +44,9 @@ public class SearchResultsActivity extends AppCompatActivity {
     
     private List<User> allMatchedUsers = new ArrayList<>();
     private List<Post> allMatchedPosts = new ArrayList<>();
+    
+    private String userId;
+    private User currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,6 +56,19 @@ public class SearchResultsActivity extends AppCompatActivity {
         query = getIntent().getStringExtra("QUERY");
         userRepository = new UserRepository();
         postRepository = new PostRepository();
+        
+        AuthRepository auth = new AuthRepository();
+        if (auth.getCurrentUser() != null) {
+            userId = auth.getCurrentUser().getUid();
+            userRepository.getUser(userId, new FirebaseCallback<User>() {
+                @Override
+                public void onSuccess(User result) {
+                    currentUser = result;
+                }
+                @Override
+                public void onError(String message) {}
+            });
+        }
 
         initViews();
         performSearch();
@@ -66,6 +89,7 @@ public class SearchResultsActivity extends AppCompatActivity {
         recyclerUsersSmall.setAdapter(usersSmallAdapter);
 
         postsSmallAdapter = new PostAdapter();
+        postsSmallAdapter.setListener(this);
         RecyclerView recyclerPostsSmall = findViewById(R.id.recyclerPostsSmall);
         recyclerPostsSmall.setLayoutManager(new LinearLayoutManager(this));
         recyclerPostsSmall.setAdapter(postsSmallAdapter);
@@ -77,6 +101,7 @@ public class SearchResultsActivity extends AppCompatActivity {
         recyclerAccountsOnly.setAdapter(usersOnlyAdapter);
 
         postsOnlyAdapter = new PostAdapter();
+        postsOnlyAdapter.setListener(this);
         RecyclerView recyclerPostsOnly = findViewById(R.id.recyclerPostsOnly);
         recyclerPostsOnly.setLayoutManager(new LinearLayoutManager(this));
         recyclerPostsOnly.setAdapter(postsOnlyAdapter);
@@ -120,7 +145,7 @@ public class SearchResultsActivity extends AppCompatActivity {
         });
 
         // Search Posts
-        postRepository.searchPosts(query, new FirebaseCallback<List<Post>>() {
+        postRepository.searchPosts(query, userId, new FirebaseCallback<List<Post>>() {
             @Override
             public void onSuccess(List<Post> result) {
                 allMatchedPosts = result;
@@ -147,5 +172,83 @@ public class SearchResultsActivity extends AppCompatActivity {
         postsSmallAdapter.setPosts(allMatchedPosts);
         
         findViewById(R.id.tvPostsLabel).setVisibility(allMatchedPosts.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void onLikeClick(Post post, int position) {
+        if (userId == null) return;
+        boolean liked = post.isLikedByCurrentUser();
+        postRepository.toggleLike(post.getId(), userId, liked, new SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                post.setLikedByCurrentUser(!liked);
+                post.setLikesCount(liked ? post.getLikesCount() - 1 : post.getLikesCount() + 1);
+                postsOnlyAdapter.notifyDataSetChanged();
+                postsSmallAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(String message) {
+                Toast.makeText(SearchResultsActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    public void onCommentClick(Post post) {
+        showCommentsDialog(post);
+    }
+
+    private void showCommentsDialog(Post post) {
+        Dialog dialog = new Dialog(this);
+        dialog.setContentView(R.layout.dialog_comments);
+        RecyclerView recycler = dialog.findViewById(R.id.recyclerComments);
+        EditText etComment = dialog.findViewById(R.id.etComment);
+        MaterialButton btnPost = dialog.findViewById(R.id.btnPostComment);
+        CommentAdapter commentAdapter = new CommentAdapter();
+        recycler.setLayoutManager(new LinearLayoutManager(this));
+        recycler.setAdapter(commentAdapter);
+
+        postRepository.getComments(post.getId(), new FirebaseCallback<List<Comment>>() {
+            @Override
+            public void onSuccess(List<Comment> result) {
+                commentAdapter.setComments(result);
+            }
+            @Override
+            public void onError(String message) {}
+        });
+
+        btnPost.setOnClickListener(v -> {
+            String text = etComment.getText().toString().trim();
+            if (text.isEmpty() || currentUser == null) return;
+            Comment comment = new Comment();
+            comment.setUserId(userId);
+            comment.setUsername(currentUser.getUsername());
+            comment.setUserPhoto(currentUser.getProfilePhoto());
+            comment.setText(text);
+            postRepository.addComment(post.getId(), comment, new SimpleCallback() {
+                @Override
+                public void onSuccess() {
+                    etComment.setText("");
+                    postRepository.getComments(post.getId(), new FirebaseCallback<List<Comment>>() {
+                        @Override
+                        public void onSuccess(List<Comment> result) {
+                            commentAdapter.setComments(result);
+                            post.setCommentsCount(post.getCommentsCount() + 1);
+                            postsOnlyAdapter.notifyDataSetChanged();
+                            postsSmallAdapter.notifyDataSetChanged();
+                        }
+                        @Override
+                        public void onError(String message) {}
+                    });
+                }
+                @Override
+                public void onError(String message) {
+                    Toast.makeText(SearchResultsActivity.this, message, Toast.LENGTH_SHORT).show();
+                }
+            });
+        });
+
+        dialog.show();
     }
 }

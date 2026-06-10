@@ -114,7 +114,7 @@ public class FirestoreService {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
-    public void searchPosts(String query, FirebaseCallback<List<Post>> callback) {
+    public void searchPosts(String query, String currentUserId, FirebaseCallback<List<Post>> callback) {
         db.collection(FirestoreConstants.POSTS)
                 .whereEqualTo("visibility", FirestoreConstants.VISIBILITY_PUBLIC)
                 .limit(100)
@@ -134,9 +134,13 @@ public class FirestoreService {
                         if (p1.getCreatedAt() == null || p2.getCreatedAt() == null) return 0;
                         return p2.getCreatedAt().compareTo(p1.getCreatedAt());
                     });
-                    callback.onSuccess(posts);
+                    mapPostsWithLikes(posts, currentUserId, callback);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void searchPosts(String query, FirebaseCallback<List<Post>> callback) {
+        searchPosts(query, null, callback);
     }
 
     public void searchUsers(String query, FirebaseCallback<List<User>> callback) {

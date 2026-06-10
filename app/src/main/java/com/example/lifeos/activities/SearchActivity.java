@@ -130,11 +130,11 @@ public class SearchActivity extends AppCompatActivity implements PostAdapter.Pos
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(Editable s) {
-                String query = s.toString().trim();
-                // We don't search as user types anymore per request
+                // Check the actual text in the Editable
+                boolean isEmpty = s == null || s.toString().trim().isEmpty();
                 
-                // Show/Hide recent searches based on query
-                if (query.isEmpty() && !recentSearches.isEmpty()) {
+                // Show/Hide recent searches based on whether text is empty AND history exists
+                if (isEmpty && !recentSearches.isEmpty()) {
                     findViewById(R.id.layoutRecentSearches).setVisibility(View.VISIBLE);
                 } else {
                     findViewById(R.id.layoutRecentSearches).setVisibility(View.GONE);

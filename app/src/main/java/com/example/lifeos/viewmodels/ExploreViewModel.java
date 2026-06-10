@@ -34,7 +34,7 @@ public class ExploreViewModel extends ViewModel {
 
     public void loadExplorePosts(String currentUserId) {
         loading.setValue(true);
-        postRepository.searchPosts(currentQuery, new FirebaseCallback<List<Post>>() {
+        postRepository.searchPosts(currentQuery, currentUserId, new FirebaseCallback<List<Post>>() {
             @Override
             public void onSuccess(List<Post> result) {
                 List<Post> filtered = new ArrayList<>();

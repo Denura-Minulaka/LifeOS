@@ -30,8 +30,12 @@ public class PostRepository {
         firestoreService.getUserPosts(profileUserId, currentUserId, callback);
     }
 
+    public void searchPosts(String query, String currentUserId, FirebaseCallback<List<Post>> callback) {
+        firestoreService.searchPosts(query, currentUserId, callback);
+    }
+
     public void searchPosts(String query, FirebaseCallback<List<Post>> callback) {
-        firestoreService.searchPosts(query, callback);
+        firestoreService.searchPosts(query, null, callback);
     }
 
     public void createPost(Post post, Uri mediaUri, SimpleCallback callback) {

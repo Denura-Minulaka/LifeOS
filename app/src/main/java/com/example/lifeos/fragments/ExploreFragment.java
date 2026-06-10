@@ -146,9 +146,14 @@ public class ExploreFragment extends Fragment implements PostAdapter.PostListene
         viewModel.getError().observe(getViewLifecycleOwner(), msg -> {
             if (msg != null) Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
         });
+    }
 
-        // Initial Load
-        viewModel.loadExplorePosts(userId);
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (userId != null) {
+            viewModel.loadExplorePosts(userId);
+        }
     }
 
     private void updateCategoryFilters() {
