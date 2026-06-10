@@ -3,11 +3,13 @@ package com.example.lifeos.adapters;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.lifeos.R;
 import com.example.lifeos.models.Comment;
 import com.example.lifeos.utils.TimeUtils;
@@ -38,6 +40,12 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
         holder.tvUser.setText(c.getUsername());
         holder.tvText.setText(c.getText());
         holder.tvTime.setText(TimeUtils.timeAgo(c.getCreatedAt()));
+
+        Glide.with(holder.itemView.getContext())
+                .load(c.getUserPhoto())
+                .placeholder(R.drawable.ic_logo)
+                .circleCrop()
+                .into(holder.ivUser);
     }
 
     @Override
@@ -47,12 +55,14 @@ public class CommentAdapter extends RecyclerView.Adapter<CommentAdapter.CommentV
 
     static class CommentViewHolder extends RecyclerView.ViewHolder {
         TextView tvUser, tvText, tvTime;
+        ImageView ivUser;
 
         CommentViewHolder(@NonNull View itemView) {
             super(itemView);
             tvUser = itemView.findViewById(R.id.tvCommentUser);
             tvText = itemView.findViewById(R.id.tvCommentText);
             tvTime = itemView.findViewById(R.id.tvCommentTime);
+            ivUser = itemView.findViewById(R.id.ivCommentUser);
         }
     }
 }

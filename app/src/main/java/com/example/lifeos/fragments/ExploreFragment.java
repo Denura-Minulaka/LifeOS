@@ -181,57 +181,6 @@ public class ExploreFragment extends Fragment implements PostAdapter.PostListene
 
     @Override
     public void onCommentClick(Post post) {
-        showCommentsDialog(post);
-    }
-
-    private void showCommentsDialog(Post post) {
-        Dialog dialog = new Dialog(requireContext());
-        dialog.setContentView(R.layout.dialog_comments);
-        RecyclerView recycler = dialog.findViewById(R.id.recyclerComments);
-        EditText etComment = dialog.findViewById(R.id.etComment);
-        MaterialButton btnPost = dialog.findViewById(R.id.btnPostComment);
-        CommentAdapter commentAdapter = new CommentAdapter();
-        recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recycler.setAdapter(commentAdapter);
-
-        postRepository.getComments(post.getId(), new FirebaseCallback<List<Comment>>() {
-            @Override
-            public void onSuccess(List<Comment> result) {
-                commentAdapter.setComments(result);
-            }
-            @Override
-            public void onError(String message) {}
-        });
-
-        btnPost.setOnClickListener(v -> {
-            String text = etComment.getText().toString().trim();
-            if (text.isEmpty() || currentUser == null) return;
-            Comment comment = new Comment();
-            comment.setUserId(userId);
-            comment.setUsername(currentUser.getUsername());
-            comment.setUserPhoto(currentUser.getProfilePhoto());
-            comment.setText(text);
-            postRepository.addComment(post.getId(), comment, new SimpleCallback() {
-                @Override
-                public void onSuccess() {
-                    etComment.setText("");
-                    postRepository.getComments(post.getId(), new FirebaseCallback<List<Comment>>() {
-                        @Override
-                        public void onSuccess(List<Comment> result) {
-                            commentAdapter.setComments(result);
-                            post.setCommentsCount(post.getCommentsCount() + 1);
-                        }
-                        @Override
-                        public void onError(String message) {}
-                    });
-                }
-                @Override
-                public void onError(String message) {
-                    Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show();
-                }
-            });
-        });
-
-        dialog.show();
+        CommentBottomSheet.newInstance(post).show(getChildFragmentManager(), "comments");
     }
 }
