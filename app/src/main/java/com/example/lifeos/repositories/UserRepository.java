@@ -127,4 +127,16 @@ public class UserRepository {
     public void clearRecentSearches(String userId, SimpleCallback callback) {
         firestoreService.clearRecentSearches(userId, callback);
     }
+
+    public void followUser(String currentUserId, String targetUserId, SimpleCallback callback) {
+        firestoreService.followUser(currentUserId, targetUserId, callback);
+    }
+
+    public void unfollowUser(String currentUserId, String targetUserId, SimpleCallback callback) {
+        firestoreService.unfollowUser(currentUserId, targetUserId, callback);
+    }
+
+    public void checkFollowing(String currentUserId, String targetUserId, FirebaseCallback<Boolean> callback) {
+        firestoreService.checkFollowing(currentUserId, targetUserId, callback);
+    }
 }

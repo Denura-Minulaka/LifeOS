@@ -21,6 +21,7 @@ public class ProfileViewModel extends ViewModel {
     private final MutableLiveData<User> user = new MutableLiveData<>();
     private final MutableLiveData<List<Post>> allPosts = new MutableLiveData<>();
     private final MutableLiveData<List<Post>> filteredPosts = new MutableLiveData<>();
+    private final MutableLiveData<Boolean> isFollowing = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
     private String filterCategory = null;
@@ -28,11 +29,21 @@ public class ProfileViewModel extends ViewModel {
 
     public LiveData<User> getUser() { return user; }
     public LiveData<List<Post>> getFilteredPosts() { return filteredPosts; }
+    public LiveData<Boolean> getIsFollowing() { return isFollowing; }
     public LiveData<Boolean> getLoading() { return loading; }
     public LiveData<String> getError() { return error; }
 
     public void loadProfile(String profileUserId, String currentUserId) {
         loading.setValue(true);
+        if (currentUserId != null && !currentUserId.equals(profileUserId)) {
+            userRepository.checkFollowing(currentUserId, profileUserId, new FirebaseCallback<Boolean>() {
+                @Override
+                public void onSuccess(Boolean result) {
+                    isFollowing.setValue(result);
+                }
+                @Override public void onError(String message) {}
+            });
+        }
         userRepository.getUser(profileUserId, new FirebaseCallback<User>() {
             @Override
             public void onSuccess(User result) {
@@ -81,10 +92,10 @@ public class ProfileViewModel extends ViewModel {
         }
         List<Post> result = new ArrayList<>();
         for (Post p : source) {
+            if ("photos".equals(tabFilter) && !"image".equals(p.getMediaType())) continue;
             if ("videos".equals(tabFilter) && !"video".equals(p.getMediaType())) continue;
-            if ("achievements".equals(tabFilter)) {
-                if (p.getCategories() == null || !p.getCategories().contains("achievements")) continue;
-            }
+            if ("none".equals(tabFilter) && !"none".equals(p.getMediaType())) continue;
+
             if (filterCategory != null && (p.getCategories() == null || !p.getCategories().contains(filterCategory))) {
                 continue;
             }
@@ -123,6 +134,36 @@ public class ProfileViewModel extends ViewModel {
                 post.setLikedByCurrentUser(!liked);
                 post.setLikesCount(liked ? post.getLikesCount() - 1 : post.getLikesCount() + 1);
                 filteredPosts.setValue(filteredPosts.getValue());
+            }
+            @Override
+            public void onError(String message) {
+                error.setValue(message);
+            }
+        });
+    }
+
+    public void followUser(String currentUserId, String targetUserId) {
+        userRepository.followUser(currentUserId, targetUserId, new SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                isFollowing.setValue(true);
+                // Optionally refresh user to update follower count
+                loadProfile(targetUserId, currentUserId);
+            }
+            @Override
+            public void onError(String message) {
+                error.setValue(message);
+            }
+        });
+    }
+
+    public void unfollowUser(String currentUserId, String targetUserId) {
+        userRepository.unfollowUser(currentUserId, targetUserId, new SimpleCallback() {
+            @Override
+            public void onSuccess() {
+                isFollowing.setValue(false);
+                // Optionally refresh user to update follower count
+                loadProfile(targetUserId, currentUserId);
             }
             @Override
             public void onError(String message) {

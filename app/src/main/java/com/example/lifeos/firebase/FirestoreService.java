@@ -407,6 +407,57 @@ public class FirestoreService {
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
 
+    public void followUser(String currentUserId, String targetUserId, SimpleCallback callback) {
+        com.google.firebase.firestore.WriteBatch batch = db.batch();
+
+        var followingRef = db.collection(FirestoreConstants.USERS).document(currentUserId)
+                .collection(FirestoreConstants.FOLLOWING).document(targetUserId);
+        var followersRef = db.collection(FirestoreConstants.USERS).document(targetUserId)
+                .collection(FirestoreConstants.FOLLOWERS).document(currentUserId);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("timestamp", Timestamp.now());
+
+        batch.set(followingRef, data);
+        batch.set(followersRef, data);
+        batch.update(db.collection(FirestoreConstants.USERS).document(currentUserId),
+                "followingCount", FieldValue.increment(1));
+        batch.update(db.collection(FirestoreConstants.USERS).document(targetUserId),
+                "followersCount", FieldValue.increment(1));
+
+        batch.commit()
+                .addOnSuccessListener(v -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void unfollowUser(String currentUserId, String targetUserId, SimpleCallback callback) {
+        com.google.firebase.firestore.WriteBatch batch = db.batch();
+
+        var followingRef = db.collection(FirestoreConstants.USERS).document(currentUserId)
+                .collection(FirestoreConstants.FOLLOWING).document(targetUserId);
+        var followersRef = db.collection(FirestoreConstants.USERS).document(targetUserId)
+                .collection(FirestoreConstants.FOLLOWERS).document(currentUserId);
+
+        batch.delete(followingRef);
+        batch.delete(followersRef);
+        batch.update(db.collection(FirestoreConstants.USERS).document(currentUserId),
+                "followingCount", FieldValue.increment(-1));
+        batch.update(db.collection(FirestoreConstants.USERS).document(targetUserId),
+                "followersCount", FieldValue.increment(-1));
+
+        batch.commit()
+                .addOnSuccessListener(v -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void checkFollowing(String currentUserId, String targetUserId, FirebaseCallback<Boolean> callback) {
+        db.collection(FirestoreConstants.USERS).document(currentUserId)
+                .collection(FirestoreConstants.FOLLOWING).document(targetUserId)
+                .get()
+                .addOnSuccessListener(doc -> callback.onSuccess(doc.exists()))
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
     public void completeQuest(String userId, DailyQuest quest, SimpleCallback callback) {
         Map<String, Object> data = new HashMap<>();
         data.put("completedAt", Timestamp.now());

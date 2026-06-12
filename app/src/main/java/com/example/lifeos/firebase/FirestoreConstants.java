@@ -14,6 +14,8 @@ public final class FirestoreConstants {
     public static final String LIKES = "likes";
     public static final String COMMENTS = "comments";
     public static final String RECENT_SEARCHES = "recent_searches";
+    public static final String FOLLOWERS = "followers";
+    public static final String FOLLOWING = "following";
 
     public static final String VISIBILITY_PUBLIC = "public";
     public static final String VISIBILITY_PRIVATE = "private";

@@ -85,6 +85,11 @@ public class SearchResultsActivity extends AppCompatActivity implements PostAdap
 
         // Adapters for "All" tab
         usersSmallAdapter = new UserAdapter();
+        usersSmallAdapter.setListener(user -> {
+            Intent intent = new Intent(this, UserProfileActivity.class);
+            intent.putExtra("USER_ID", user.getId());
+            startActivity(intent);
+        });
         RecyclerView recyclerUsersSmall = findViewById(R.id.recyclerUsersSmall);
         recyclerUsersSmall.setLayoutManager(new LinearLayoutManager(this));
         recyclerUsersSmall.setAdapter(usersSmallAdapter);
@@ -97,6 +102,11 @@ public class SearchResultsActivity extends AppCompatActivity implements PostAdap
 
         // Adapters for specific tabs
         usersOnlyAdapter = new UserAdapter();
+        usersOnlyAdapter.setListener(user -> {
+            Intent intent = new Intent(this, UserProfileActivity.class);
+            intent.putExtra("USER_ID", user.getId());
+            startActivity(intent);
+        });
         RecyclerView recyclerAccountsOnly = findViewById(R.id.recyclerAccountsOnly);
         recyclerAccountsOnly.setLayoutManager(new LinearLayoutManager(this));
         recyclerAccountsOnly.setAdapter(usersOnlyAdapter);

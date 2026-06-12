@@ -115,7 +115,6 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
         tabLayout.addTab(tabLayout.newTab().setText("Photos"));
         tabLayout.addTab(tabLayout.newTab().setText("Videos"));
         tabLayout.addTab(tabLayout.newTab().setText("None"));
-        tabLayout.addTab(tabLayout.newTab().setText("Achievements"));
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
@@ -127,10 +126,6 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
                     case 1: filter = "photos"; break;
                     case 2: filter = "videos"; break;
                     case 3: filter = "none"; break;
-                    case 4: 
-                        filter = "achievements"; 
-                        showExtras = false;
-                        break;
                 }
                 viewModel.setTabFilter(filter);
                 int visibility = showExtras ? View.VISIBLE : View.GONE;
