@@ -20,11 +20,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
-        if (savedInstanceState == null) {
-            showFragment(new HomeFragment());
-            bottomNav.setSelectedItemId(R.id.nav_home);
-        }
-
+        
         bottomNav.setOnItemSelectedListener(item -> {
             Fragment fragment;
             int id = item.getItemId();
@@ -37,6 +33,11 @@ public class MainActivity extends AppCompatActivity {
             showFragment(fragment);
             return true;
         });
+
+        if (savedInstanceState == null) {
+            int targetTab = getIntent().getIntExtra("SELECT_TAB", R.id.nav_home);
+            bottomNav.setSelectedItemId(targetTab);
+        }
     }
 
     private void showFragment(Fragment fragment) {
@@ -44,5 +45,16 @@ public class MainActivity extends AppCompatActivity {
                 .beginTransaction()
                 .replace(R.id.fragmentContainer, fragment)
                 .commit();
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        int targetTab = intent.getIntExtra("SELECT_TAB", -1);
+        if (targetTab != -1) {
+            BottomNavigationView bottomNav = findViewById(R.id.bottomNav);
+            bottomNav.setSelectedItemId(targetTab);
+        }
     }
 }

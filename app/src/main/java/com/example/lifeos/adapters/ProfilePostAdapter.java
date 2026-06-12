@@ -40,9 +40,14 @@ public class ProfilePostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
     private final Map<String, List<Post>> groupedPosts = new LinkedHashMap<>();
     private final Map<String, Integer> visibleCounts = new HashMap<>();
     private ProfilePostListener listener;
+    private boolean canPin = true;
 
     public void setListener(ProfilePostListener listener) {
         this.listener = listener;
+    }
+
+    public void setCanPin(boolean canPin) {
+        this.canPin = canPin;
     }
 
     public void clearExpandedState() {
@@ -151,7 +156,7 @@ public class ProfilePostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
             holder.itemView.setOnClickListener(v -> loadMoreForDate(lmi.date));
         } else {
             Post post = (Post) item;
-            ((PostViewHolder) holder).bind(post, listener, position);
+            ((PostViewHolder) holder).bind(post, listener, position, canPin);
         }
     }
 
@@ -206,7 +211,7 @@ public class ProfilePostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
         }
 
         @android.annotation.SuppressLint("ClickableViewAccessibility")
-        void bind(Post post, ProfilePostListener listener, int position) {
+        void bind(Post post, ProfilePostListener listener, int position, boolean canPin) {
             tvUsername.setText(post.getUsername());
             tvTime.setText(TimeUtils.timeAgo(post.getCreatedAt()));
             tvTitle.setText(post.getTitle());
@@ -240,24 +245,31 @@ public class ProfilePostAdapter extends RecyclerView.Adapter<RecyclerView.ViewHo
                 btnLike.setOnClickListener(v -> listener.onLikeClick(post, position));
                 btnComment.setOnClickListener(v -> listener.onCommentClick(post));
 
-                itemView.setOnTouchListener((v, event) -> {
-                    switch (event.getAction()) {
-                        case android.view.MotionEvent.ACTION_DOWN:
-                            holdRunnable = () -> {
-                                if (listener != null) listener.onPinHold(post, itemView);
+                if (canPin) {
+                    itemView.setOnTouchListener((v, event) -> {
+                        switch (event.getAction()) {
+                            case android.view.MotionEvent.ACTION_DOWN:
+                                holdRunnable = () -> {
+                                    if (listener != null) listener.onPinHold(post, itemView);
+                                    borderAnimation.stopAnimation();
+                                };
+                                holdHandler.postDelayed(holdRunnable, 1000);
+                                borderAnimation.startAnimation(1000);
+                                break;
+                            case android.view.MotionEvent.ACTION_UP:
+                            case android.view.MotionEvent.ACTION_CANCEL:
+                                holdHandler.removeCallbacks(holdRunnable);
                                 borderAnimation.stopAnimation();
-                            };
-                            holdHandler.postDelayed(holdRunnable, 1000);
-                            borderAnimation.startAnimation(1000);
-                            break;
-                        case android.view.MotionEvent.ACTION_UP:
-                        case android.view.MotionEvent.ACTION_CANCEL:
-                            holdHandler.removeCallbacks(holdRunnable);
-                            borderAnimation.stopAnimation();
-                            break;
-                    }
-                    return true;
-                });
+                                break;
+                        }
+                        return true;
+                    });
+                } else {
+                    itemView.setOnTouchListener(null);
+                    itemView.setLongClickable(false);
+                    borderAnimation.stopAnimation();
+                    borderAnimation.setVisibility(View.GONE);
+                }
             }
         }
     }

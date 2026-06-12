@@ -54,31 +54,44 @@ public class HomeFragment extends Fragment implements PostAdapter.PostListener {
         super.onViewCreated(view, savedInstanceState);
         viewModel = new ViewModelProvider(this).get(FeedViewModel.class);
         postRepository = new PostRepository();
-        AuthRepository auth = new AuthRepository();
-        if (auth.getCurrentUser() == null) return;
-        userId = auth.getCurrentUser().getUid();
-
-        new UserRepository().getUser(userId, new FirebaseCallback<User>() {
-            @Override
-            public void onSuccess(User result) {
-                currentUser = result;
-            }
-            @Override
-            public void onError(String message) {}
-        });
 
         SwipeRefreshLayout swipe = view.findViewById(R.id.swipeRefresh);
         RecyclerView recycler = view.findViewById(R.id.recyclerPosts);
         ImageView btnCreatePost = view.findViewById(R.id.btnCreatePost);
 
-        new UserRepository().getUser(userId, new FirebaseCallback<User>() {
-            @Override
-            public void onSuccess(User result) {
-                currentUser = result;
-            }
-            @Override
-            public void onError(String message) {}
-        });
+        adapter = new PostAdapter();
+        adapter.setListener(this);
+        recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recycler.setAdapter(adapter);
+
+        AuthRepository auth = new AuthRepository();
+        if (auth.getCurrentUser() != null) {
+            userId = auth.getCurrentUser().getUid();
+            
+            new UserRepository().getUser(userId, new FirebaseCallback<User>() {
+                @Override
+                public void onSuccess(User result) {
+                    currentUser = result;
+                }
+                @Override
+                public void onError(String message) {}
+            });
+
+            swipe.setOnRefreshListener(() -> viewModel.loadFeed(userId));
+            viewModel.getPosts().observe(getViewLifecycleOwner(), posts -> {
+                adapter.setPosts(posts);
+                swipe.setRefreshing(false);
+            });
+            viewModel.getLoading().observe(getViewLifecycleOwner(), loading -> {
+                if (Boolean.TRUE.equals(loading)) swipe.setRefreshing(true);
+            });
+            viewModel.getError().observe(getViewLifecycleOwner(), msg -> {
+                if (msg != null) Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
+                swipe.setRefreshing(false);
+            });
+
+            viewModel.loadFeed(userId);
+        }
 
         btnCreatePost.setOnClickListener(v -> {
             getParentFragmentManager().beginTransaction()
@@ -86,26 +99,6 @@ public class HomeFragment extends Fragment implements PostAdapter.PostListener {
                     .addToBackStack(null)
                     .commit();
         });
-
-        adapter = new PostAdapter();
-        adapter.setListener(this);
-        recycler.setLayoutManager(new LinearLayoutManager(requireContext()));
-        recycler.setAdapter(adapter);
-
-        swipe.setOnRefreshListener(() -> viewModel.loadFeed(userId));
-        viewModel.getPosts().observe(getViewLifecycleOwner(), posts -> {
-            adapter.setPosts(posts);
-            swipe.setRefreshing(false);
-        });
-        viewModel.getLoading().observe(getViewLifecycleOwner(), loading -> {
-            if (Boolean.TRUE.equals(loading)) swipe.setRefreshing(true);
-        });
-        viewModel.getError().observe(getViewLifecycleOwner(), msg -> {
-            if (msg != null) Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
-            swipe.setRefreshing(false);
-        });
-
-        viewModel.loadFeed(userId);
     }
 
     @Override

@@ -103,6 +103,7 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
 
         postAdapter = new ProfilePostAdapter();
         postAdapter.setListener(this);
+        postAdapter.setCanPin(true);
         pinnedAdapter = new PinnedPostAdapter();
         pinnedAdapter.setListener(this);
         recyclerPosts.setLayoutManager(new LinearLayoutManager(requireContext()));

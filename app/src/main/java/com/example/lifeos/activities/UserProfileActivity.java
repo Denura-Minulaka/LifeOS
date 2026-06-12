@@ -14,16 +14,20 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.lifeos.R;
+import com.example.lifeos.adapters.CategoryChipAdapter;
 import com.example.lifeos.adapters.PinnedPostAdapter;
 import com.example.lifeos.adapters.ProfilePostAdapter;
 import com.example.lifeos.fragments.CommentBottomSheet;
+import com.example.lifeos.models.Category;
 import com.example.lifeos.models.Post;
 import com.example.lifeos.models.User;
 import com.example.lifeos.repositories.AuthRepository;
+import com.example.lifeos.utils.CategorySelector;
 import com.example.lifeos.viewmodels.ProfileViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserProfileActivity extends AppCompatActivity implements ProfilePostAdapter.ProfilePostListener, PinnedPostAdapter.PinnedPostListener {
@@ -33,7 +37,9 @@ public class UserProfileActivity extends AppCompatActivity implements ProfilePos
     private String currentUserId;
     private ProfilePostAdapter postAdapter;
     private PinnedPostAdapter pinnedAdapter;
+    private CategoryChipAdapter filterAdapter;
     private MaterialButton btnFollow;
+    private final List<Category> selectedCategoriesForFilter = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,14 +82,48 @@ public class UserProfileActivity extends AppCompatActivity implements ProfilePos
         RecyclerView recyclerPosts = findViewById(R.id.recyclerPosts);
         postAdapter = new ProfilePostAdapter();
         postAdapter.setListener(this);
+        postAdapter.setCanPin(false); // Disable glowing/pinning for guest view
         recyclerPosts.setLayoutManager(new LinearLayoutManager(this));
         recyclerPosts.setAdapter(postAdapter);
 
         RecyclerView recyclerPinned = findViewById(R.id.recyclerPinned);
         pinnedAdapter = new PinnedPostAdapter();
         pinnedAdapter.setListener(this);
+        pinnedAdapter.setCanPin(false);
         recyclerPinned.setLayoutManager(new LinearLayoutManager(this));
         recyclerPinned.setAdapter(pinnedAdapter);
+
+        RecyclerView recyclerFilter = findViewById(R.id.recyclerCategoryFilter);
+        filterAdapter = new CategoryChipAdapter();
+        filterAdapter.setListener(position -> {
+            if (position < selectedCategoriesForFilter.size()) {
+                if (postAdapter != null) postAdapter.clearExpandedState();
+                selectedCategoriesForFilter.remove(position);
+                filterAdapter.setCategories(selectedCategoriesForFilter, true, true);
+                if (!selectedCategoriesForFilter.isEmpty()) {
+                    viewModel.setCategoryFilter(selectedCategoriesForFilter.get(0).getName());
+                } else {
+                    viewModel.setCategoryFilter(null);
+                }
+            }
+        });
+        recyclerFilter.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        recyclerFilter.setAdapter(filterAdapter);
+
+        findViewById(R.id.btnSelectCategories).setOnClickListener(v -> {
+            CategorySelector.show(this, selectedCategoriesForFilter, selected -> {
+                if (postAdapter != null) postAdapter.clearExpandedState();
+                selectedCategoriesForFilter.clear();
+                selectedCategoriesForFilter.addAll(selected);
+                for (Category c : selected) c.setSelected(true);
+                filterAdapter.setCategories(selected, true, true);
+                if (!selected.isEmpty()) {
+                    viewModel.setCategoryFilter(selected.get(0).getName());
+                } else {
+                    viewModel.setCategoryFilter(null);
+                }
+            });
+        });
 
         TabLayout tabLayout = findViewById(R.id.tabLayout);
         tabLayout.addTab(tabLayout.newTab().setText("All"));
@@ -94,12 +134,13 @@ public class UserProfileActivity extends AppCompatActivity implements ProfilePos
         tabLayout.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
-                String filter = "all";
+                if (postAdapter != null) postAdapter.clearExpandedState();
+                String filter;
                 switch (tab.getPosition()) {
-                    case 0: filter = "all"; break;
                     case 1: filter = "photos"; break;
                     case 2: filter = "videos"; break;
                     case 3: filter = "none"; break;
+                    default: filter = "all"; break;
                 }
                 viewModel.setTabFilter(filter);
             }
@@ -148,7 +189,11 @@ public class UserProfileActivity extends AppCompatActivity implements ProfilePos
     private void bindUser(User user) {
         if (user == null) return;
         
-        ((TextView) findViewById(R.id.tvName)).setText(user.getName());
+        String displayName = user.getName();
+        if (user.getId().equals(currentUserId)) {
+            displayName += " (Me)";
+        }
+        ((TextView) findViewById(R.id.tvName)).setText(displayName);
         ((TextView) findViewById(R.id.tvUsername)).setText("@" + user.getUsername());
         ((TextView) findViewById(R.id.tvBio)).setText(user.getBio());
         ((TextView) findViewById(R.id.tvFollowers)).setText(String.valueOf(user.getFollowersCount()));
