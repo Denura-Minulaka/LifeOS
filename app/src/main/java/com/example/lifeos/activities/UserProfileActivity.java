@@ -137,6 +137,7 @@ public class UserProfileActivity extends AppCompatActivity implements ProfilePos
                 if (postAdapter != null) postAdapter.clearExpandedState();
                 String filter;
                 switch (tab.getPosition()) {
+                    case 0: filter = "all"; break;
                     case 1: filter = "photos"; break;
                     case 2: filter = "videos"; break;
                     case 3: filter = "none"; break;

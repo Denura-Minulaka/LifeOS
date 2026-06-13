@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.lifeos.firebase.FirestoreConstants;
 import com.example.lifeos.interfaces.FirebaseCallback;
 import com.example.lifeos.interfaces.SimpleCallback;
 import com.example.lifeos.models.Post;
@@ -25,7 +26,7 @@ public class ProfileViewModel extends ViewModel {
     private final MutableLiveData<Boolean> loading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
     private String filterCategory = null;
-    private String tabFilter = "posts";
+    private String tabFilter = "all";
 
     public LiveData<User> getUser() { return user; }
     public LiveData<List<Post>> getFilteredPosts() { return filteredPosts; }
@@ -92,9 +93,23 @@ public class ProfileViewModel extends ViewModel {
         }
         List<Post> result = new ArrayList<>();
         for (Post p : source) {
-            if ("photos".equals(tabFilter) && !"image".equals(p.getMediaType())) continue;
-            if ("videos".equals(tabFilter) && !"video".equals(p.getMediaType())) continue;
-            if ("none".equals(tabFilter) && !"none".equals(p.getMediaType())) continue;
+            String mediaType = p.getMediaType();
+            if (mediaType == null || mediaType.trim().isEmpty()) {
+                mediaType = FirestoreConstants.MEDIA_NONE;
+            }
+
+            boolean matchesTab = true;
+            if ("photos".equals(tabFilter)) {
+                matchesTab = FirestoreConstants.MEDIA_IMAGE.equalsIgnoreCase(mediaType);
+            } else if ("videos".equals(tabFilter)) {
+                matchesTab = FirestoreConstants.MEDIA_VIDEO.equalsIgnoreCase(mediaType);
+            } else if ("none".equals(tabFilter)) {
+                matchesTab = FirestoreConstants.MEDIA_NONE.equalsIgnoreCase(mediaType);
+            } else if ("achievements".equals(tabFilter)) {
+                matchesTab = false;
+            }
+
+            if (!matchesTab) continue;
 
             if (filterCategory != null && (p.getCategories() == null || !p.getCategories().contains(filterCategory))) {
                 continue;
@@ -122,7 +137,27 @@ public class ProfileViewModel extends ViewModel {
         List<Post> source = allPosts.getValue();
         List<Post> pinned = new ArrayList<>();
         if (source == null) return pinned;
-        for (Post p : source) if (p.isPinned()) pinned.add(p);
+        for (Post p : source) {
+            if (!p.isPinned()) continue;
+
+            String mediaType = p.getMediaType();
+            if (mediaType == null || mediaType.trim().isEmpty()) {
+                mediaType = FirestoreConstants.MEDIA_NONE;
+            }
+
+            boolean matchesTab = true;
+            if ("photos".equals(tabFilter)) {
+                matchesTab = FirestoreConstants.MEDIA_IMAGE.equalsIgnoreCase(mediaType);
+            } else if ("videos".equals(tabFilter)) {
+                matchesTab = FirestoreConstants.MEDIA_VIDEO.equalsIgnoreCase(mediaType);
+            } else if ("none".equals(tabFilter)) {
+                matchesTab = FirestoreConstants.MEDIA_NONE.equalsIgnoreCase(mediaType);
+            } else if ("achievements".equals(tabFilter)) {
+                matchesTab = false;
+            }
+
+            if (matchesTab) pinned.add(p);
+        }
         return pinned;
     }
 
