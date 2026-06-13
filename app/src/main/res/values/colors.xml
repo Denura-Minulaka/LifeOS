@@ -13,4 +13,5 @@
     <color name="white">#FFFFFFFF</color>
     <color name="chip_background">#2A2D35</color>
     <color name="divider">#2E3238</color>
+    <color name="border_color">#2E3238</color>
 </resources>

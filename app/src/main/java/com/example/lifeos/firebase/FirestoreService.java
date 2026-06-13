@@ -6,7 +6,9 @@ import com.example.lifeos.models.Category;
 import com.example.lifeos.models.Comment;
 import com.example.lifeos.models.DailyQuest;
 import com.example.lifeos.models.Post;
+import com.example.lifeos.models.Task;
 import com.example.lifeos.models.User;
+import com.example.lifeos.models.UserStats;
 import com.example.lifeos.utils.XpCalculator;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -50,6 +52,36 @@ public class FirestoreService {
                 .addOnSuccessListener(doc -> {
                     if (doc.exists()) callback.onSuccess(FirestoreMapper.mapUser(doc));
                     else callback.onError("User not found");
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void getUserStats(String userId, FirebaseCallback<UserStats> callback) {
+        db.collection(FirestoreConstants.USERS).document(userId)
+                .collection(FirestoreConstants.STATS).document("main")
+                .get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        UserStats stats = doc.toObject(UserStats.class);
+                        callback.onSuccess(stats);
+                    } else {
+                        callback.onSuccess(new UserStats());
+                    }
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void getCompletedQuests(String userId, FirebaseCallback<List<Map<String, Object>>> callback) {
+        db.collection(FirestoreConstants.USERS).document(userId)
+                .collection(FirestoreConstants.COMPLETED_QUESTS)
+                .orderBy("completedAt", Query.Direction.DESCENDING)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<Map<String, Object>> list = new ArrayList<>();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        list.add(doc.getData());
+                    }
+                    callback.onSuccess(list);
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }
@@ -462,6 +494,7 @@ public class FirestoreService {
         Map<String, Object> data = new HashMap<>();
         data.put("completedAt", Timestamp.now());
         data.put("xpEarned", quest.getXpReward());
+        data.put("questTitle", quest.getTitle());
 
         db.collection(FirestoreConstants.USERS).document(userId)
                 .collection(FirestoreConstants.COMPLETED_QUESTS).document(quest.getId())
@@ -471,6 +504,57 @@ public class FirestoreService {
                             .collection(FirestoreConstants.STATS).document("main")
                             .update("tasksCompleted", FieldValue.increment(1));
                     addXpToUser(userId, quest.getXpReward(), callback);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void createTask(Task task, SimpleCallback callback) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("userId", task.getUserId());
+        data.put("title", task.getTitle());
+        data.put("description", task.getDescription());
+        data.put("timeframe", task.getTimeframe());
+        data.put("completed", false);
+        data.put("createdAt", Timestamp.now());
+
+        db.collection(FirestoreConstants.TASKS).add(data)
+                .addOnSuccessListener(v -> callback.onSuccess())
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void getUserTasks(String userId, FirebaseCallback<List<Task>> callback) {
+        db.collection(FirestoreConstants.TASKS)
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("completed", false)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<Task> list = new ArrayList<>();
+                    Timestamp now = Timestamp.now();
+                    for (QueryDocumentSnapshot doc : snap) {
+                        Task t = doc.toObject(Task.class);
+                        t.setId(doc.getId());
+                        // Filter out expired tasks in the client side if they are not completed
+                        if (t.getTimeframe() != null && t.getTimeframe().compareTo(now) < 0) {
+                            // Optionally delete or just ignore
+                            continue;
+                        }
+                        list.add(t);
+                    }
+                    callback.onSuccess(list);
+                })
+                .addOnFailureListener(e -> callback.onError(e.getMessage()));
+    }
+
+    public void completeTask(String userId, String taskId, SimpleCallback callback) {
+        db.collection(FirestoreConstants.TASKS).document(taskId)
+                .update("completed", true)
+                .addOnSuccessListener(v -> {
+                    // Also increment stats and add some default XP for personal tasks? 
+                    // User didn't specify XP for personal tasks, but let's add a bit to be nice.
+                    db.collection(FirestoreConstants.USERS).document(userId)
+                            .collection(FirestoreConstants.STATS).document("main")
+                            .update("tasksCompleted", FieldValue.increment(1));
+                    addXpToUser(userId, 50, callback); // Default 50 XP for personal task
                 })
                 .addOnFailureListener(e -> callback.onError(e.getMessage()));
     }

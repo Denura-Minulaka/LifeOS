@@ -4,6 +4,7 @@ import com.example.lifeos.firebase.FirestoreService;
 import com.example.lifeos.interfaces.FirebaseCallback;
 import com.example.lifeos.interfaces.SimpleCallback;
 import com.example.lifeos.models.DailyQuest;
+import com.example.lifeos.models.Task;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,16 +21,17 @@ public class QuestRepository {
                     callback.onSuccess(quests);
                     return;
                 }
-                List<DailyQuest> result = new ArrayList<>(quests);
+                List<DailyQuest> result = new ArrayList<>();
                 final int[] pending = {quests.size()};
-                for (int i = 0; i < quests.size(); i++) {
-                    DailyQuest quest = quests.get(i);
-                    int index = i;
+                for (DailyQuest quest : quests) {
                     firestoreService.isQuestCompletedToday(userId, quest.getId(),
                             new FirebaseCallback<Boolean>() {
                                 @Override
                                 public void onSuccess(Boolean completed) {
-                                    result.get(index).setCompletedToday(completed);
+                                    if (!completed) {
+                                        quest.setCompletedToday(false);
+                                        result.add(quest);
+                                    }
                                     if (--pending[0] == 0) callback.onSuccess(result);
                                 }
                                 @Override
@@ -48,5 +50,17 @@ public class QuestRepository {
 
     public void completeQuest(String userId, DailyQuest quest, SimpleCallback callback) {
         firestoreService.completeQuest(userId, quest, callback);
+    }
+
+    public void loadUserTasks(String userId, FirebaseCallback<List<Task>> callback) {
+        firestoreService.getUserTasks(userId, callback);
+    }
+
+    public void createTask(Task task, SimpleCallback callback) {
+        firestoreService.createTask(task, callback);
+    }
+
+    public void completeTask(String userId, String taskId, SimpleCallback callback) {
+        firestoreService.completeTask(userId, taskId, callback);
     }
 }

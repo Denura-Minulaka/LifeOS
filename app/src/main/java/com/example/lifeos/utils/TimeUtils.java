@@ -8,6 +8,11 @@ public final class TimeUtils {
 
     private TimeUtils() {}
 
+    public static String formatDateTime(java.util.Date date) {
+        if (date == null) return "";
+        return new java.text.SimpleDateFormat("MMM dd, HH:mm", java.util.Locale.getDefault()).format(date);
+    }
+
     public static String timeAgo(Timestamp timestamp) {
         if (timestamp == null) return "";
         long diff = System.currentTimeMillis() - timestamp.toDate().getTime();

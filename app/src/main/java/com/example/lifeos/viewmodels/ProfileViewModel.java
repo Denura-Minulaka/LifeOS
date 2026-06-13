@@ -9,17 +9,22 @@ import com.example.lifeos.interfaces.FirebaseCallback;
 import com.example.lifeos.interfaces.SimpleCallback;
 import com.example.lifeos.models.Post;
 import com.example.lifeos.models.User;
+import com.example.lifeos.models.UserStats;
 import com.example.lifeos.repositories.PostRepository;
 import com.example.lifeos.repositories.UserRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ProfileViewModel extends ViewModel {
 
     private final UserRepository userRepository = new UserRepository();
     private final PostRepository postRepository = new PostRepository();
+    private final com.example.lifeos.firebase.FirestoreService firestoreService = new com.example.lifeos.firebase.FirestoreService();
     private final MutableLiveData<User> user = new MutableLiveData<>();
+    private final MutableLiveData<UserStats> stats = new MutableLiveData<>();
+    private final MutableLiveData<List<Map<String, Object>>> completedQuests = new MutableLiveData<>();
     private final MutableLiveData<List<Post>> allPosts = new MutableLiveData<>();
     private final MutableLiveData<List<Post>> filteredPosts = new MutableLiveData<>();
     private final MutableLiveData<Boolean> isFollowing = new MutableLiveData<>(false);
@@ -29,6 +34,8 @@ public class ProfileViewModel extends ViewModel {
     private String tabFilter = "all";
 
     public LiveData<User> getUser() { return user; }
+    public LiveData<UserStats> getStats() { return stats; }
+    public LiveData<List<Map<String, Object>>> getCompletedQuests() { return completedQuests; }
     public LiveData<List<Post>> getFilteredPosts() { return filteredPosts; }
     public LiveData<Boolean> getIsFollowing() { return isFollowing; }
     public LiveData<Boolean> getLoading() { return loading; }
@@ -50,12 +57,32 @@ public class ProfileViewModel extends ViewModel {
             public void onSuccess(User result) {
                 user.setValue(result);
                 loadPosts(profileUserId, currentUserId);
+                loadStats(profileUserId);
             }
             @Override
             public void onError(String message) {
                 loading.setValue(false);
                 error.setValue(message);
             }
+        });
+    }
+
+    private void loadStats(String userId) {
+        firestoreService.getUserStats(userId, new FirebaseCallback<UserStats>() {
+            @Override
+            public void onSuccess(UserStats result) {
+                stats.setValue(result);
+            }
+            @Override
+            public void onError(String message) {}
+        });
+        firestoreService.getCompletedQuests(userId, new FirebaseCallback<List<Map<String, Object>>>() {
+            @Override
+            public void onSuccess(List<Map<String, Object>> result) {
+                completedQuests.setValue(result);
+            }
+            @Override
+            public void onError(String message) {}
         });
     }
 

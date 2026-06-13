@@ -27,6 +27,7 @@ import com.example.lifeos.adapters.CategoryChipAdapter;
 import com.example.lifeos.adapters.CommentAdapter;
 import com.example.lifeos.adapters.PinnedPostAdapter;
 import com.example.lifeos.adapters.ProfilePostAdapter;
+import com.example.lifeos.adapters.QuestHistoryAdapter;
 import com.example.lifeos.adapters.UserPostGridAdapter;
 import com.example.lifeos.fragments.CommentBottomSheet;
 import com.example.lifeos.interfaces.FirebaseCallback;
@@ -53,6 +54,7 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
     private ProfileViewModel viewModel;
     private ProfilePostAdapter postAdapter;
     private PinnedPostAdapter pinnedAdapter;
+    private QuestHistoryAdapter historyAdapter;
     private PostRepository postRepository;
     private String userId;
     private User currentUser;
@@ -101,6 +103,12 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
         RecyclerView recyclerPosts = view.findViewById(R.id.recyclerPosts);
         TextView tvNoPinned = view.findViewById(R.id.tvNoPinned);
 
+        // Achievements view components
+        View layoutAchievements = view.findViewById(R.id.layoutAchievements);
+        TextView tvStreak = view.findViewById(R.id.tvStreakDays);
+        TextView tvTotalPosts = view.findViewById(R.id.tvTotalPosts);
+        RecyclerView recyclerHistory = view.findViewById(R.id.recyclerQuestHistory);
+
         postAdapter = new ProfilePostAdapter();
         postAdapter.setListener(this);
         postAdapter.setCanPin(true);
@@ -112,6 +120,10 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
         recyclerPinned.setLayoutManager(new LinearLayoutManager(requireContext()));
         recyclerPinned.setAdapter(pinnedAdapter);
 
+        historyAdapter = new QuestHistoryAdapter();
+        recyclerHistory.setLayoutManager(new LinearLayoutManager(requireContext()));
+        recyclerHistory.setAdapter(historyAdapter);
+
         tabLayout.addTab(tabLayout.newTab().setText("All"));
         tabLayout.addTab(tabLayout.newTab().setText("Photos"));
         tabLayout.addTab(tabLayout.newTab().setText("Videos"));
@@ -122,22 +134,43 @@ public class ProfileFragment extends Fragment implements ProfilePostAdapter.Prof
             public void onTabSelected(TabLayout.Tab tab) {
                 if (postAdapter != null) postAdapter.clearExpandedState();
                 String filter = "all";
-                boolean showExtras = true;
+                boolean isAchievements = false;
                 switch (tab.getPosition()) {
                     case 0: filter = "all"; break;
                     case 1: filter = "photos"; break;
                     case 2: filter = "videos"; break;
                     case 3: filter = "none"; break;
-                    case 4: filter = "achievements"; break;
+                    case 4: 
+                        filter = "achievements"; 
+                        isAchievements = true;
+                        break;
                 }
                 viewModel.setTabFilter(filter);
-                int visibility = showExtras ? View.VISIBLE : View.GONE;
-                recyclerFilter.setVisibility(visibility);
-                tvPinnedLabel.setVisibility(visibility);
-                recyclerPinned.setVisibility(visibility);
+                
+                int postVisibility = isAchievements ? View.GONE : View.VISIBLE;
+                int achievementVisibility = isAchievements ? View.VISIBLE : View.GONE;
+                
+                recyclerFilter.setVisibility(postVisibility);
+                btnSelectCategories.setVisibility(postVisibility);
+                tvPinnedLabel.setVisibility(postVisibility);
+                recyclerPinned.setVisibility(postVisibility);
+                recyclerPosts.setVisibility(postVisibility);
+                
+                layoutAchievements.setVisibility(achievementVisibility);
             }
             @Override public void onTabUnselected(TabLayout.Tab tab) {}
             @Override public void onTabReselected(TabLayout.Tab tab) {}
+        });
+
+        viewModel.getStats().observe(getViewLifecycleOwner(), stats -> {
+            if (stats != null) {
+                tvStreak.setText(String.valueOf(stats.getStreakDays()));
+                tvTotalPosts.setText(String.valueOf(stats.getTotalPosts()));
+            }
+        });
+
+        viewModel.getCompletedQuests().observe(getViewLifecycleOwner(), history -> {
+            historyAdapter.setHistory(history);
         });
 
         CategoryChipAdapter filterAdapter = new CategoryChipAdapter();
